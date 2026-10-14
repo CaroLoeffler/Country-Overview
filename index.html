@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Länder">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0f766e">
+<title>Länder-Atlas</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--line:#e4e7ec;--acc:#0f766e;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--info:#a16207;--sea:#e6eff4;--land:#c9d3cd;--pin:#e11d48}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--tx:#eceff4;--mut:#98a2b3;--line:#262c36;--acc:#2dd4bf;--ok:#4ade80;--warn:#fb923c;--bad:#f87171;--info:#facc15;--sea:#1a2430;--land:#3a4753;--pin:#fb7185}}
+.map{display:block;width:100%;max-width:240px;height:auto;max-height:260px;border-radius:10px;background:var(--sea);margin:12px 0 2px;border:1px solid var(--line)}
+.land{fill:var(--land);stroke:var(--sea);stroke-width:.8;vector-effect:non-scaling-stroke}
+.mapcap{font-size:12px;color:var(--mut);margin:0 0 4px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;border-bottom:1px solid var(--line)}
+h1{font-size:20px;margin:0 0 8px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input,select,button{font:inherit;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:9px 10px}
+input[type=search]{flex:1 1 100%}
+select{flex:1 1 40%}
+button.upd{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600;flex:1 1 100%}
+@media (prefers-color-scheme:dark){button.upd{color:#04201c}}
+button[disabled]{opacity:.6}
+#status{font-size:12px;color:var(--mut);margin-top:6px}
+main{padding:12px 14px calc(env(safe-area-inset-bottom) + 24px);max-width:900px;margin:0 auto}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}
+summary{list-style:none;display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+.flag{font-size:28px;line-height:1}
+.nm{flex:1;min-width:0}
+.nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm span{font-size:13px;color:var(--mut)}
+.pop{font-size:13px;color:var(--mut);text-align:right;white-space:nowrap}
+.det{padding:0 12px 12px;border-top:1px solid var(--line)}
+dl{margin:10px 0 0;display:grid;grid-template-columns:132px 1fr;gap:6px 10px;font-size:14px}
+dt{color:var(--mut);overflow-wrap:anywhere;hyphens:auto}dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.l0{color:var(--ok)}.l1{color:var(--info)}.l2{color:var(--warn)}.l3{color:var(--bad)}.ln{color:var(--mut)}
+a{color:var(--acc)}
+footer{font-size:12px;color:var(--mut);padding:8px 2px}
+#count{font-size:13px;color:var(--mut);margin:0 2px 8px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><g id="wm"><path class="land" d="M-168 -66 L-162 -70 L-141 -70 L-125 -70 L-110 -73 L-95 -72 L-85 -70 L-80 -63 L-93 -60 L-94 -57 L-82 -52 L-78 -57 L-77 -62 L-70 -60 L-62 -58 L-56 -52 L-60 -47 L-66 -44 L-70 -42 L-76 -38 L-76 -35 L-81 -31 L-80 -26 L-82 -27 L-85 -30 L-90 -29 L-95 -29 L-97 -26 L-97 -21 L-95 -18 L-91 -19 L-90 -21 L-87 -21 L-88 -16 L-84 -15 L-83 -10 L-80 -9 L-77 -8 L-80 -7 L-83 -8 L-86 -11 L-88 -13 L-92 -15 L-96 -16 L-105 -20 L-106 -23 L-109 -25 L-113 -31 L-115 -30 L-110 -23 L-112 -25 L-115 -30 L-117 -33 L-121 -35 L-124 -40 L-124 -47 L-128 -51 L-135 -58 L-145 -60 L-152 -59 L-158 -57 L-165 -60 L-166 -64Z"/><path class="land" d="M-73 -78 L-60 -82 L-30 -83 L-20 -78 L-20 -70 L-43 -60 L-52 -65 L-58 -75Z"/><path class="land" d="M-77 -8 L-72 -12 L-62 -10 L-52 -5 L-50 -0 L-44 2 L-35 5 L-37 12 L-39 18 L-41 22 L-48 26 L-53 34 L-58 35 L-57 39 L-65 41 L-65 47 L-68 52 L-69 55 L-74 52 L-73 42 L-71 30 L-70 18 L-76 14 L-81 5 L-80 -0 L-78 -3Z"/><path class="land" d="M-85 -22 L-80 -23 L-74 -20 L-78 -20Z"/><path class="land" d="M-74 -19.5 L-69 -19.8 L-68.5 -18.3 L-72 -18Z"/><path class="land" d="M-9 -37 L-9 -43 L-1 -46 L-4 -48 L2 -51 L5 -53 L9 -54 L8 -57 L11 -54 L14 -54 L21 -55 L24 -58 L30 -60 L33 -66 L40 -68 L60 -69 L60 -50 L50 -46 L47 -43 L40 -44 L36 -45 L30 -46 L28 -43 L29 -41 L26 -40 L23 -38 L22 -37 L21 -39 L19 -42 L15 -45 L13 -45 L12 -44 L14 -42 L18 -40 L16 -38 L15 -38 L12 -41 L10 -44 L7 -44 L3 -43 L0 -39 L-2 -37 L-5 -36Z"/><path class="land" d="M5 -59 L6 -62 L14 -68 L20 -70 L30 -70 L28 -66 L25 -65 L22 -64 L17 -61 L18 -59 L16 -56 L13 -55 L11 -58 L8 -58Z"/><path class="land" d="M-24 -65 L-22 -66.5 L-15 -66 L-14 -64.5 L-19 -63.4Z"/><path class="land" d="M-5 -50 L1 -51 L2 -53 L-2 -56 L-2 -58 L-5 -58.5 L-6 -56 L-3 -54 L-5 -52Z"/><path class="land" d="M-10 -52 L-6 -52 L-6 -55 L-8 -55Z"/><path class="land" d="M26 -40 L30 -36 L35 -36 L35 -31 L35 -28 L39 -21 L43 -13 L45 -12.5 L52 -16 L58 -20 L60 -22 L57 -25 L56 -26 L51 -24 L50 -27 L48 -30 L51 -28 L56 -27 L62 -25 L67 -25 L72 -21 L73 -16 L77 -8 L80 -10 L80 -15 L87 -21 L92 -22 L94 -17 L98 -16 L98 -8 L100 -4 L103 -1.5 L104 -9 L106 -10 L109 -12 L107 -17 L106 -20 L108 -21 L110 -21 L114 -22 L120 -26 L122 -30 L121 -37 L118 -39 L122 -40 L125 -40 L126 -35 L129 -35 L130 -42 L135 -43 L141 -52 L137 -54 L142 -59 L155 -59 L163 -62 L163 -58 L156 -51 L160 -54 L163 -60 L179 -64 L180 -69 L170 -70 L140 -72 L113 -74 L105 -78 L95 -76 L80 -73 L70 -73 L65 -69 L60 -69 L60 -50 L50 -46 L47 -43 L40 -44 L41 -41 L36 -42 L30 -41Z"/><path class="land" d="M130 -31 L132 -34 L136 -35 L140 -36 L142 -40 L141 -45 L145 -44 L142 -42 L141 -38 L140 -35 L136 -34 L131 -33Z"/><path class="land" d="M95 -5 L98 -4 L106 3 L105 6 L101 3Z"/><path class="land" d="M109 -1 L115 -5 L119 -5 L117 3 L110 3Z"/><path class="land" d="M105 6 L114 8 L106 7Z"/><path class="land" d="M119 -1 L125 -1 L122 1 L121 5 L119 4Z"/><path class="land" d="M120 -18 L122 -18 L125 -12 L126 -7 L122 -7 L120 -14Z"/><path class="land" d="M80 -9.8 L82 -7 L80 -6Z"/><path class="land" d="M-17 -21 L-13 -28 L-10 -30 L-6 -36 L10 -37 L11 -33 L20 -31 L25 -32 L32 -31 L34 -28 L38 -21 L43 -12 L51 -12 L51 -10 L48 -5 L41 2 L39 8 L40 15 L35 20 L35 25 L32 28 L27 34 L20 35 L18 32 L14 23 L12 17 L14 10 L12 5 L9 1 L9 -4 L5 -5 L-2 -5 L-8 -4 L-13 -8 L-17 -14Z"/><path class="land" d="M44 25 L47 25 L50 15 L49 12 L44 17Z"/><path class="land" d="M114 22 L114 26 L115 34 L118 35 L124 33 L131 31 L135 35 L138 35 L141 38 L147 39 L150 37 L153 31 L153 25 L146 19 L142 11 L141 17 L136 15 L136 12 L130 12 L126 14 L122 17Z"/><path class="land" d="M145 41 L148 41 L147 43.5Z"/><path class="land" d="M173 35 L178 38 L175 41 L173 39Z"/><path class="land" d="M172 41 L174 42 L171 46 L167 46Z"/><path class="land" d="M131 1 L141 3 L150 10 L141 9 L137 5Z"/></g></defs></svg>
+<header>
+  <h1>🌍 Länder-Atlas</h1>
+  <div class="row">
+    <input id="q" type="search" placeholder="Land, Hauptstadt oder Sprache suchen …" autocomplete="off">
+    <select id="reg"><option value="">Alle Regionen</option></select>
+    <select id="sort">
+      <option value="name">Sortierung: Name</option>
+      <option value="pop">Einwohner</option>
+      <option value="gdp">BIP pro Kopf</option>
+      <option value="gni">Einkommen pro Kopf</option>
+      <option value="hdi">HDI</option>
+    </select>
+    <button class="upd" id="upd">↻ Daten aktualisieren</button>
+  </div>
+  <div id="status">Lade …</div>
+</header>
+<main>
+  <div id="count"></div>
+  <div id="list"></div>
+  <footer id="foot"></footer>
+</main>
+
+<script>
+(function(){
+'use strict';
+var CACHE_KEY='laender-atlas-v4';
+var $=function(s){return document.querySelector(s)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]})};
+var RG={AF:'Afrika',AM:'Amerika',AS:'Asien',EU:'Europa',OC:'Ozeanien'};
+var nf=new Intl.NumberFormat('de-DE');
+
+/* Feste Basisliste: ISO3|ISO2|Name|Hauptstadt|Region – damit die Länder immer sichtbar sind */
+var BASE=(
+'DZA|DZ|Algerien|Algier|AF;AGO|AO|Angola|Luanda|AF;BEN|BJ|Benin|Porto-Novo|AF;BWA|BW|Botswana|Gaborone|AF;BFA|BF|Burkina Faso|Ouagadougou|AF;BDI|BI|Burundi|Gitega|AF;CPV|CV|Kap Verde|Praia|AF;CMR|CM|Kamerun|Jaunde|AF;CAF|CF|Zentralafrikanische Republik|Bangui|AF;TCD|TD|Tschad|N\'Djamena|AF;COM|KM|Komoren|Moroni|AF;COG|CG|Republik Kongo|Brazzaville|AF;COD|CD|DR Kongo|Kinshasa|AF;CIV|CI|Elfenbeinküste|Yamoussoukro|AF;DJI|DJ|Dschibuti|Dschibuti|AF;EGY|EG|Ägypten|Kairo|AF;GNQ|GQ|Äquatorialguinea|Malabo|AF;ERI|ER|Eritrea|Asmara|AF;SWZ|SZ|Eswatini|Mbabane|AF;ETH|ET|Äthiopien|Addis Abeba|AF;GAB|GA|Gabun|Libreville|AF;GMB|GM|Gambia|Banjul|AF;GHA|GH|Ghana|Accra|AF;GIN|GN|Guinea|Conakry|AF;GNB|GW|Guinea-Bissau|Bissau|AF;KEN|KE|Kenia|Nairobi|AF;LSO|LS|Lesotho|Maseru|AF;LBR|LR|Liberia|Monrovia|AF;LBY|LY|Libyen|Tripolis|AF;MDG|MG|Madagaskar|Antananarivo|AF;MWI|MW|Malawi|Lilongwe|AF;MLI|ML|Mali|Bamako|AF;MRT|MR|Mauretanien|Nouakchott|AF;MUS|MU|Mauritius|Port Louis|AF;MAR|MA|Marokko|Rabat|AF;MOZ|MZ|Mosambik|Maputo|AF;NAM|NA|Namibia|Windhuk|AF;NER|NE|Niger|Niamey|AF;NGA|NG|Nigeria|Abuja|AF;RWA|RW|Ruanda|Kigali|AF;STP|ST|São Tomé und Príncipe|São Tomé|AF;SEN|SN|Senegal|Dakar|AF;SYC|SC|Seychellen|Victoria|AF;SLE|SL|Sierra Leone|Freetown|AF;SOM|SO|Somalia|Mogadischu|AF;ZAF|ZA|Südafrika|Pretoria|AF;SSD|SS|Südsudan|Juba|AF;SDN|SD|Sudan|Khartum|AF;TZA|TZ|Tansania|Dodoma|AF;TGO|TG|Togo|Lomé|AF;TUN|TN|Tunesien|Tunis|AF;UGA|UG|Uganda|Kampala|AF;ZMB|ZM|Sambia|Lusaka|AF;ZWE|ZW|Simbabwe|Harare|AF;'+
+'ATG|AG|Antigua und Barbuda|Saint John\'s|AM;ARG|AR|Argentinien|Buenos Aires|AM;BHS|BS|Bahamas|Nassau|AM;BRB|BB|Barbados|Bridgetown|AM;BLZ|BZ|Belize|Belmopan|AM;BOL|BO|Bolivien|Sucre|AM;BRA|BR|Brasilien|Brasília|AM;CAN|CA|Kanada|Ottawa|AM;CHL|CL|Chile|Santiago de Chile|AM;COL|CO|Kolumbien|Bogotá|AM;CRI|CR|Costa Rica|San José|AM;CUB|CU|Kuba|Havanna|AM;DMA|DM|Dominica|Roseau|AM;DOM|DO|Dominikanische Republik|Santo Domingo|AM;ECU|EC|Ecuador|Quito|AM;SLV|SV|El Salvador|San Salvador|AM;GRD|GD|Grenada|Saint George\'s|AM;GTM|GT|Guatemala|Guatemala-Stadt|AM;GUY|GY|Guyana|Georgetown|AM;HTI|HT|Haiti|Port-au-Prince|AM;HND|HN|Honduras|Tegucigalpa|AM;JAM|JM|Jamaika|Kingston|AM;MEX|MX|Mexiko|Mexiko-Stadt|AM;NIC|NI|Nicaragua|Managua|AM;PAN|PA|Panama|Panama-Stadt|AM;PRY|PY|Paraguay|Asunción|AM;PER|PE|Peru|Lima|AM;KNA|KN|St. Kitts und Nevis|Basseterre|AM;LCA|LC|St. Lucia|Castries|AM;VCT|VC|St. Vincent und die Grenadinen|Kingstown|AM;SUR|SR|Suriname|Paramaribo|AM;TTO|TT|Trinidad und Tobago|Port of Spain|AM;USA|US|Vereinigte Staaten|Washington, D.C.|AM;URY|UY|Uruguay|Montevideo|AM;VEN|VE|Venezuela|Caracas|AM;'+
+'AFG|AF|Afghanistan|Kabul|AS;ARM|AM|Armenien|Eriwan|AS;AZE|AZ|Aserbaidschan|Baku|AS;BHR|BH|Bahrain|Manama|AS;BGD|BD|Bangladesch|Dhaka|AS;BTN|BT|Bhutan|Thimphu|AS;BRN|BN|Brunei|Bandar Seri Begawan|AS;KHM|KH|Kambodscha|Phnom Penh|AS;CHN|CN|China|Peking|AS;GEO|GE|Georgien|Tiflis|AS;IND|IN|Indien|Neu-Delhi|AS;IDN|ID|Indonesien|Jakarta|AS;IRN|IR|Iran|Teheran|AS;IRQ|IQ|Irak|Bagdad|AS;ISR|IL|Israel|Jerusalem|AS;JPN|JP|Japan|Tokio|AS;JOR|JO|Jordanien|Amman|AS;KAZ|KZ|Kasachstan|Astana|AS;KWT|KW|Kuwait|Kuwait-Stadt|AS;KGZ|KG|Kirgisistan|Bischkek|AS;LAO|LA|Laos|Vientiane|AS;LBN|LB|Libanon|Beirut|AS;MYS|MY|Malaysia|Kuala Lumpur|AS;MDV|MV|Malediven|Malé|AS;MNG|MN|Mongolei|Ulan-Bator|AS;MMR|MM|Myanmar|Naypyidaw|AS;NPL|NP|Nepal|Kathmandu|AS;PRK|KP|Nordkorea|Pjöngjang|AS;OMN|OM|Oman|Maskat|AS;PAK|PK|Pakistan|Islamabad|AS;PHL|PH|Philippinen|Manila|AS;QAT|QA|Katar|Doha|AS;SAU|SA|Saudi-Arabien|Riad|AS;SGP|SG|Singapur|Singapur|AS;KOR|KR|Südkorea|Seoul|AS;LKA|LK|Sri Lanka|Sri Jayawardenepura Kotte|AS;SYR|SY|Syrien|Damaskus|AS;TJK|TJ|Tadschikistan|Duschanbe|AS;THA|TH|Thailand|Bangkok|AS;TLS|TL|Osttimor|Dili|AS;TUR|TR|Türkei|Ankara|AS;TKM|TM|Turkmenistan|Aschgabat|AS;ARE|AE|Vereinigte Arabische Emirate|Abu Dhabi|AS;UZB|UZ|Usbekistan|Taschkent|AS;VNM|VN|Vietnam|Hanoi|AS;YEM|YE|Jemen|Sanaa|AS;PSE|PS|Palästina|Ramallah|AS;'+
+'ALB|AL|Albanien|Tirana|EU;AND|AD|Andorra|Andorra la Vella|EU;AUT|AT|Österreich|Wien|EU;BLR|BY|Belarus|Minsk|EU;BEL|BE|Belgien|Brüssel|EU;BIH|BA|Bosnien und Herzegowina|Sarajevo|EU;BGR|BG|Bulgarien|Sofia|EU;HRV|HR|Kroatien|Zagreb|EU;CYP|CY|Zypern|Nikosia|EU;CZE|CZ|Tschechien|Prag|EU;DNK|DK|Dänemark|Kopenhagen|EU;EST|EE|Estland|Tallinn|EU;FIN|FI|Finnland|Helsinki|EU;FRA|FR|Frankreich|Paris|EU;DEU|DE|Deutschland|Berlin|EU;GRC|GR|Griechenland|Athen|EU;HUN|HU|Ungarn|Budapest|EU;ISL|IS|Island|Reykjavík|EU;IRL|IE|Irland|Dublin|EU;ITA|IT|Italien|Rom|EU;LVA|LV|Lettland|Riga|EU;LIE|LI|Liechtenstein|Vaduz|EU;LTU|LT|Litauen|Vilnius|EU;LUX|LU|Luxemburg|Luxemburg|EU;MLT|MT|Malta|Valletta|EU;MDA|MD|Moldau|Chișinău|EU;MCO|MC|Monaco|Monaco|EU;MNE|ME|Montenegro|Podgorica|EU;NLD|NL|Niederlande|Amsterdam|EU;MKD|MK|Nordmazedonien|Skopje|EU;NOR|NO|Norwegen|Oslo|EU;POL|PL|Polen|Warschau|EU;PRT|PT|Portugal|Lissabon|EU;ROU|RO|Rumänien|Bukarest|EU;RUS|RU|Russland|Moskau|EU;SMR|SM|San Marino|San Marino|EU;SRB|RS|Serbien|Belgrad|EU;SVK|SK|Slowakei|Bratislava|EU;SVN|SI|Slowenien|Ljubljana|EU;ESP|ES|Spanien|Madrid|EU;SWE|SE|Schweden|Stockholm|EU;CHE|CH|Schweiz|Bern|EU;UKR|UA|Ukraine|Kiew|EU;GBR|GB|Vereinigtes Königreich|London|EU;VAT|VA|Vatikanstadt|Vatikanstadt|EU;'+
+'AUS|AU|Australien|Canberra|OC;FJI|FJ|Fidschi|Suva|OC;KIR|KI|Kiribati|Tarawa|OC;MHL|MH|Marshallinseln|Majuro|OC;FSM|FM|Mikronesien|Palikir|OC;NRU|NR|Nauru|Yaren|OC;NZL|NZ|Neuseeland|Wellington|OC;PLW|PW|Palau|Ngerulmud|OC;PNG|PG|Papua-Neuguinea|Port Moresby|OC;WSM|WS|Samoa|Apia|OC;SLB|SB|Salomonen|Honiara|OC;TON|TO|Tonga|Nukuʻalofa|OC;TUV|TV|Tuvalu|Funafuti|OC;VUT|VU|Vanuatu|Port Vila|OC'
+).split(';').map(function(l){
+  var p=l.split('|');
+  var fl='';try{fl=String.fromCodePoint.apply(null,p[1].split('').map(function(c){return 127397+c.charCodeAt(0)}))}catch(e){}
+  return {iso3:p[0],iso2:p[1],name:p[2],cap:p[3],region:RG[p[4]],flag:fl,
+    pop:null,langs:[],gdp:null,gdpY:'',gni:null,gniY:'',hdi:null,gov:'',rel:'',sec:{l:'n',t:'Noch nicht geladen – „Daten aktualisieren“ tippen'}};
+});
+
+/* Eingebauter Datenstand (Näherungswerte nach bestem Wissen, nicht live geprüft).
+   Felder: ISO3|Einwohner Mio.|BIP/Kopf USD|BNE/Kopf USD|HDI|Sprachen|Staatsform|Religionen|Sicherheit 0-3|Kultur */
+var SNAP=`DZA|46.8|5300|4800|0.763|Arabisch, Tamazight, Französisch|Präsidialrepublik|Islam (sunnitisch)|2|Arabisch-berberisches Erbe, Couscous, Raï-Musik
+AGO|37.9|2100|1900|0.591|Portugiesisch, Umbundu, Kimbundu|Präsidialrepublik|Christentum|0|Kizomba, Semba, portugiesisch-bantu geprägt
+BEN|14.5|1400|1400|0.504|Französisch, Fon, Yoruba|Präsidialrepublik|Christentum, Islam, Vodun|2|Wiege des Vodun, Königspaläste von Abomey
+BWA|2.6|7000|7300|0.731|Setswana, Englisch|Parlamentarische Republik|Christentum|0|Botho-Ethik, Kgotla-Dorfversammlung, Okavango
+BFA|23.5|900|900|0.459|Französisch, Mooré, Dioula|Übergangsregierung (Militär)|Islam, Christentum|3|Filmfestival FESPACO, Masken- und Trommelkunst
+BDI|13.7|200|230|0.439|Kirundi, Französisch, Swahili|Präsidialrepublik|Christentum|2|Königliche Trommler, Kaffeeanbau
+CPV|0.52|4500|4600|0.668|Portugiesisch, Kapverdisches Kreol|Parlamentarische Republik|Christentum|0|Morna, Cesária Évora, Inselkultur
+CMR|29.1|1700|1600|0.533|Französisch, Englisch|Präsidialrepublik|Christentum, Islam|2|„Afrika im Kleinen“, Makossa, Fußballkultur
+CAF|5.3|500|500|0.414|Sango, Französisch|Präsidialrepublik|Christentum, Islam|3|Baka-Gesang, Regenwaldkulturen
+TCD|20.3|800|700|0.416|Französisch, Arabisch|Präsidialrepublik|Islam, Christentum|3|Sahel-Nomadenkultur, Tschadsee
+COM|0.9|1500|1600|0.603|Komorisch, Arabisch, Französisch|Präsidialrepublik|Islam (sunnitisch)|0|Swahili-arabische Inselkultur, Ylang-Ylang
+COG|6.3|2500|2200|0.649|Französisch, Lingala, Kituba|Präsidialrepublik|Christentum|1|Kongolesische Rumba, Sapeurs
+COD|109|700|620|0.481|Französisch, Lingala, Swahili, Kikongo|Semipräsidentielle Republik|Christentum|3|Rumba, Soukous, Masken des Regenwalds
+CIV|31.9|2700|2500|0.534|Französisch, Dioula|Präsidialrepublik|Islam, Christentum|1|Zouglou, Coupé-Décalé, Kakaoland
+DJI|1.15|3600|3500|0.513|Französisch, Arabisch, Somali, Afar|Präsidialrepublik|Islam (sunnitisch)|1|Afar- und Somali-Traditionen, Hafenlage
+EGY|116|3300|3800|0.754|Arabisch|Präsidialrepublik|Islam (sunnitisch), Christentum (Kopten)|1|Pharaonenerbe, Kairoer Film und Musik
+GNQ|1.8|6500|5800|0.674|Spanisch, Französisch, Portugiesisch|Präsidialrepublik|Christentum|0|Bantu- und spanisch-koloniale Prägung
+ERI|3.5|700|640|0.493|Tigrinya, Arabisch, Englisch|Einparteienstaat|Christentum, Islam|2|Asmaras Art-déco, Kaffeezeremonie
+SWZ|1.2|3900|3800|0.610|Siswati, Englisch|Absolute Monarchie|Christentum|0|Umhlanga-Schilftanz, Königskultur
+ETH|130|1000|1000|0.497|Amharisch, Oromo, Tigrinya|Parlamentarische Bundesrepublik|Christentum (orthodox), Islam|2|Eigene Schrift und Zeitrechnung, Kaffee-Ursprung
+GAB|2.5|8000|7500|0.733|Französisch, Fang|Präsidialrepublik|Christentum|0|Fang-Masken, Regenwald und Nationalparks
+GMB|2.8|900|900|0.524|Englisch, Mandinka, Wolof|Präsidialrepublik|Islam|0|Griot-Tradition, Kora-Musik
+GHA|34.4|2200|2300|0.602|Englisch, Twi, Ewe|Präsidialrepublik|Christentum, Islam|0|Kente-Weberei, Highlife, Adinkra-Symbole
+GIN|14.8|1700|1500|0.471|Französisch, Susu, Pular|Übergangsregierung (Militär)|Islam|2|Djembé-Trommeln, Ballets africains
+GNB|2.2|900|850|0.483|Portugiesisch, Kreol|Semipräsidentielle Republik|Islam, Christentum, Naturreligionen|2|Bijagós-Inseln, Gumbe-Musik
+KEN|56.4|2200|2200|0.628|Swahili, Englisch|Präsidialrepublik|Christentum|2|Massai, Safari, Laufnation
+LSO|2.3|900|1000|0.521|Sesotho, Englisch|Konstitutionelle Monarchie|Christentum|0|Basotho-Decken, Reiterkultur im Hochland
+LBR|5.6|800|700|0.487|Englisch|Präsidialrepublik|Christentum, Islam|1|Von freigelassenen Amerikanern gegründet
+LBY|7.4|7000|6500|0.746|Arabisch|Übergangsregierung (geteilt)|Islam (sunnitisch)|3|Berber, Antike Stätten wie Leptis Magna
+MDG|31.9|500|520|0.487|Malagasy, Französisch|Präsidialrepublik|Christentum, Naturreligionen|2|Austronesisch-afrikanisch, Lemuren, Ahnenkult
+MWI|21.7|500|600|0.517|Englisch, Chichewa|Präsidialrepublik|Christentum, Islam|0|Gule Wamkulu, Malawisee
+MLI|24.5|1000|900|0.419|Französisch, Bambara|Übergangsregierung (Militär)|Islam|3|Timbuktu, Griots, Blues-Wurzeln
+MRT|5.2|2000|2100|0.548|Arabisch, Französisch|Präsidialrepublik|Islam|2|Nomadentum, Wüstenstädte, Dichtkunst
+MUS|1.26|11000|11500|0.806|Englisch, Französisch, Kreol|Parlamentarische Republik|Hinduismus, Christentum, Islam|0|Vielvölkerinsel, Sega-Tanz
+MAR|38.1|3900|3800|0.710|Arabisch, Tamazight, Französisch|Konstitutionelle Monarchie|Islam (sunnitisch)|1|Medinas, Tajine, Gnawa-Musik
+MOZ|34.6|600|600|0.493|Portugiesisch, Makua, Swahili|Präsidialrepublik|Christentum, Islam|2|Marrabenta, Marimba-Musik
+NAM|3.1|4000|4600|0.615|Englisch, Afrikaans, Oshiwambo|Präsidialrepublik|Christentum|0|Himba, Wüsten und Weite
+NER|27.2|600|600|0.394|Französisch, Hausa, Zarma|Übergangsregierung (Militär)|Islam|3|Tuareg-Kultur, Agadez
+NGA|232|800|1000|0.560|Englisch, Hausa, Yoruba, Igbo|Präsidiale Bundesrepublik|Islam, Christentum|2|Nollywood, Afrobeats, Vielvölkerstaat
+RWA|14.3|1000|960|0.571|Kinyarwanda, Französisch, Englisch|Präsidialrepublik|Christentum|1|Intore-Tanz, Berggorillas
+STP|0.24|2800|2600|0.625|Portugiesisch|Semipräsidentielle Republik|Christentum|0|Kakaoinseln, Tchiloli-Theater
+SEN|18.5|1700|1700|0.496|Französisch, Wolof|Präsidialrepublik|Islam (Sufi-Bruderschaften)|1|Teranga (Gastfreundschaft), Mbalax, Ringkampf
+SYC|0.13|18000|17500|0.848|Seychellenkreol, Englisch, Französisch|Präsidialrepublik|Christentum|0|Kreolische Küche, Inselnatur
+SLE|8.6|800|780|0.467|Englisch, Krio|Präsidialrepublik|Islam, Christentum|1|Krio-Kultur, Freetowns Gründungsgeschichte
+SOM|19|600|550|0.404|Somali, Arabisch|Bundesrepublik im Übergang|Islam (sunnitisch)|3|Dichterkultur, Nomadentradition
+ZAF|64|6100|6300|0.741|Zulu, Xhosa, Afrikaans, Englisch u. a. (11 Amtssprachen)|Parlamentarische Republik|Christentum|1|Regenbogennation, Braai, Ubuntu
+SSD|12.4|400|300|0.388|Englisch, Arabisch, Dinka|Präsidialrepublik (Übergang)|Christentum, Naturreligionen|3|Nilotische Viehzüchter (Dinka, Nuer)
+SDN|50.4|700|600|0.511|Arabisch, Englisch|Militärregierung (Bürgerkrieg)|Islam|3|Nubien, Pyramiden von Meroe
+TZA|68.6|1200|1200|0.555|Swahili, Englisch|Präsidialrepublik|Christentum, Islam|1|Kilimandscharo, Sansibar, Swahili-Kultur
+TGO|9.5|1000|1000|0.571|Französisch, Ewe, Kabiyé|Präsidialrepublik|Christentum, Naturreligionen, Islam|1|Batammariba-Lehmhäuser, Vodun
+TUN|12.2|4300|4200|0.776|Arabisch, Französisch|Präsidialrepublik|Islam (sunnitisch)|1|Medina, Karthago, Harissa
+UGA|50|1100|1000|0.550|Englisch, Swahili, Luganda|Präsidialrepublik|Christentum, Islam|1|Königreich Buganda, Gorillas, Matoke
+ZMB|21.3|1300|1200|0.595|Englisch, Bemba|Präsidialrepublik|Christentum|0|Viktoriafälle, Kuomboka-Fest
+ZWE|16.6|2000|1900|0.627|Englisch, Shona, Ndebele|Präsidialrepublik|Christentum|1|Steinskulpturen, Great Zimbabwe
+ATG|0.1|20000|18000|0.826|Englisch|Konstitutionelle Monarchie|Christentum|0|Karibik, Steelband, Cricket
+ARG|46|13000|13000|0.865|Spanisch|Präsidiale Bundesrepublik|Christentum (katholisch)|0|Tango, Asado, Fußballkultur
+BHS|0.4|35000|31000|0.820|Englisch|Konstitutionelle Monarchie|Christentum|0|Junkanoo, Inselleben
+BRB|0.28|21000|19500|0.809|Englisch|Konstitutionelle Monarchie|Christentum|0|Cricket, Rum, Crop-Over-Fest
+BLZ|0.42|7000|6500|0.714|Englisch, Spanisch, Kreol|Konstitutionelle Monarchie|Christentum|1|Maya-Stätten, Karibik-Kreol
+BOL|12.4|3700|3600|0.698|Spanisch, Quechua, Aymara|Präsidialrepublik|Christentum (katholisch)|1|Andenkultur, Karneval von Oruro
+BRA|212|10300|9900|0.786|Portugiesisch|Präsidiale Bundesrepublik|Christentum|1|Samba, Karneval, Fußball
+CAN|40.1|53000|52000|0.939|Englisch, Französisch|Parlamentarische Bundesmonarchie|Christentum, Konfessionslos|0|Multikulturalismus, First Nations, Eishockey
+CHL|19.8|17000|16000|0.878|Spanisch|Präsidialrepublik|Christentum (katholisch)|0|Dichter wie Neruda, Wein, Anden
+COL|52.9|7000|6500|0.788|Spanisch|Präsidialrepublik|Christentum (katholisch)|2|Cumbia, Kaffee, Magischer Realismus
+CRI|5.2|18000|16500|0.806|Spanisch|Präsidialrepublik|Christentum (katholisch)|0|„Pura Vida“, Naturschutz
+CUB|11|8000|7500|0.762|Spanisch|Einparteienstaat|Christentum, Santería|1|Salsa, Son, Oldtimer
+DMA|0.07|9000|8500|0.740|Englisch, Kreol|Parlamentarische Republik|Christentum|0|Karibische Naturinsel
+DOM|11.5|11500|10800|0.766|Spanisch|Präsidialrepublik|Christentum|1|Merengue, Bachata, Baseball
+ECU|18.1|6500|6200|0.777|Spanisch, Quechua|Präsidialrepublik|Christentum (katholisch)|2|Andenindigene, Galápagos
+SLV|6.3|5800|5400|0.678|Spanisch|Präsidialrepublik|Christentum|1|Pupusas, Maya-Erbe
+GRD|0.12|11500|10500|0.795|Englisch|Konstitutionelle Monarchie|Christentum|0|Gewürzinsel, Karneval
+GTM|18.4|6000|5900|0.629|Spanisch, Maya-Sprachen|Präsidialrepublik|Christentum|2|Maya-Erbe, Textilkunst
+GUY|0.83|24000|16000|0.742|Englisch, Kreolisch|Parlamentarische Republik|Christentum, Hinduismus, Islam|1|Indisch-afrikanisch-karibische Mischung
+HTI|11.9|1700|1600|0.552|Haitianisches Kreol, Französisch|Übergangsrat|Christentum, Vodou|3|Vodou, naive Malerei, Kompa
+HND|10.7|3500|3400|0.645|Spanisch|Präsidialrepublik|Christentum|2|Maya-Ruinen von Copán
+JAM|2.8|6800|6000|0.720|Englisch, Patois|Parlamentarische Monarchie|Christentum, Rastafari|1|Reggae, Ska, Sprintkultur
+MEX|130.8|13800|11000|0.781|Spanisch, indigene Sprachen|Präsidiale Bundesrepublik|Christentum (katholisch)|2|Día de los Muertos, Mariachi, UNESCO-Küche
+NIC|7|2700|2500|0.706|Spanisch|Präsidialrepublik|Christentum|1|Dichtertradition (Rubén Darío), koloniale Städte
+PAN|4.5|18000|16500|0.839|Spanisch|Präsidialrepublik|Christentum|1|Kanalland, Pollera-Tracht
+PRY|6.9|6500|6300|0.731|Spanisch, Guaraní|Präsidialrepublik|Christentum (katholisch)|0|Zweisprachig, Tereré, Harfenmusik
+PER|34.4|8000|7500|0.794|Spanisch, Quechua, Aymara|Präsidialrepublik|Christentum (katholisch)|1|Inka-Erbe, Machu Picchu, Ceviche
+KNA|0.05|25000|21000|0.840|Englisch|Konstitutionelle Monarchie|Christentum|0|Zucker-Erbe, Karibik
+LCA|0.18|12000|11000|0.756|Englisch, Kreol|Konstitutionelle Monarchie|Christentum|0|Pitons, Inselkultur
+VCT|0.1|10000|9500|0.772|Englisch|Konstitutionelle Monarchie|Christentum|0|Karibische Inselkultur
+SUR|0.63|6500|6000|0.690|Niederländisch, Sranan Tongo|Präsidialrepublik|Christentum, Hinduismus, Islam|0|Javanisch-indische Einflüsse, Vielfalt
+TTO|1.5|18000|17500|0.814|Englisch|Parlamentarische Republik|Christentum, Hinduismus, Islam|1|Karneval, Calypso, Steelpan
+USA|345|85000|85000|0.938|Englisch, Spanisch|Präsidiale Bundesrepublik|Christentum|1|Popkultur, Einwanderergesellschaft
+URY|3.4|22000|20500|0.830|Spanisch|Präsidialrepublik|Christentum, Konfessionslos|0|Candombe, Mate, Fußball
+VEN|28.4|4000|3500|0.709|Spanisch|Präsidialrepublik (im Umbruch)|Christentum|3|Joropo, Arepas, Angel Falls
+AFG|42.6|400|380|0.496|Paschtu, Dari|Islamisches Emirat (Taliban)|Islam (sunnitisch)|3|Paschtunwali, Teppiche, Poesie
+ARM|3|8500|8800|0.786|Armenisch|Parlamentarische Republik|Christentum (Armenisch-Apostolisch)|1|Erstes christliches Staatsvolk, Duduk
+AZE|10.2|7500|6900|0.789|Aserbaidschanisch|Präsidialrepublik|Islam (schiitisch)|1|Mugham-Musik, Teppiche
+BHR|1.6|30000|28000|0.899|Arabisch|Konstitutionelle Monarchie|Islam|1|Perlentauchen, Dilmun-Erbe
+BGD|173|2600|2800|0.685|Bengalisch|Parlamentarische Republik|Islam, Hinduismus|2|Bengalische Poesie, Rikscha-Kunst
+BTN|0.79|3800|3700|0.698|Dzongkha|Konstitutionelle Monarchie|Buddhismus|0|Glück als Staatsziel, Klöster
+BRN|0.45|33000|32000|0.837|Malaiisch|Absolute Monarchie|Islam|0|Malaiische Sultanatskultur
+KHM|17.6|2100|1900|0.606|Khmer|Konstitutionelle Monarchie|Buddhismus|1|Angkor Wat, Apsara-Tanz
+CHN|1412|13300|13400|0.797|Mandarin, regionale Sprachen|Einparteienstaat (Volksrepublik)|Konfessionslos, Buddhismus, Daoismus|1|Schrifttradition, Tee, Kalligrafie
+GEO|3.7|8000|7600|0.844|Georgisch|Parlamentarische Republik|Christentum (orthodox)|1|Wein-Ursprungsland, mehrstimmiger Gesang
+IND|1450|2700|2600|0.685|Hindi, Englisch, 22 Amtssprachen|Parlamentarische Bundesrepublik|Hinduismus, Islam|1|Bollywood, Yoga, Vielfalt der Feste
+IDN|283|4900|4800|0.728|Indonesisch, Javanisch|Präsidialrepublik|Islam|1|Batik, Gamelan, Inselvielfalt
+IRN|91.6|4200|4100|0.780|Persisch, Aserbaidschanisch|Islamische Republik (theokratisch)|Islam (schiitisch)|3|Persische Poesie, Teppiche, Nowruz
+IRQ|46|5800|5500|0.695|Arabisch, Kurdisch|Parlamentarische Republik|Islam|3|Mesopotamien, Bagdader Geistesgeschichte
+ISR|10|55000|53000|0.915|Hebräisch, Arabisch|Parlamentarische Republik|Judentum, Islam|3|Start-up-Nation, Kibbuz, Feiertage
+JPN|123.5|32500|38500|0.925|Japanisch|Konstitutionelle Monarchie|Shinto, Buddhismus|0|Anime, Teezeremonie, Höflichkeitskultur
+JOR|11.6|4600|4500|0.749|Arabisch|Konstitutionelle Monarchie|Islam (sunnitisch)|1|Beduinengastfreundschaft, Petra
+KAZ|20.6|13000|11600|0.837|Kasachisch, Russisch|Präsidialrepublik|Islam, Christentum|0|Nomadentradition, Jurten, Dombra
+KWT|4.9|33000|36000|0.852|Arabisch|Konstitutionelle Monarchie (Emirat)|Islam|1|Diwaniya-Kultur, Perlenhandel
+KGZ|7.2|1900|1700|0.701|Kirgisisch, Russisch|Präsidialrepublik|Islam (sunnitisch)|0|Jurten, Manas-Epos, Reiterspiele
+LAO|7.7|2000|2100|0.620|Laotisch|Einparteienstaat|Buddhismus|1|Luang Prabang, Klosterleben
+LBN|5.8|3500|3300|0.752|Arabisch, Französisch|Parlamentarische Republik (konfessionell)|Islam, Christentum|3|Phönizisches Erbe, Meze
+MYS|35.1|11500|11400|0.819|Malaiisch, Englisch|Wahlmonarchie (Bundesstaat)|Islam|0|Vielvölkerküche, Batik
+MDV|0.53|14000|13000|0.766|Dhivehi|Präsidialrepublik|Islam (sunnitisch)|1|Inselkultur, Boduberu-Trommeln
+MNG|3.5|5500|5000|0.747|Mongolisch|Parlamentarische Republik|Buddhismus, Schamanismus|0|Nomaden, Naadam-Fest
+MMR|54.5|1200|1200|0.609|Birmanisch|Militärregierung|Buddhismus|3|Pagoden, Thanaka, Wasserfest
+NPL|29.7|1400|1400|0.622|Nepali|Parlamentarische Bundesrepublik|Hinduismus, Buddhismus|1|Himalaya, Sherpa, Tempel von Kathmandu
+PRK|26.6||||Koreanisch|Einparteienstaat (Diktatur)|Konfessionslos|3|Juche-Ideologie, Massenspiele
+OMN|5.3|20000|19500|0.819|Arabisch|Absolute Monarchie|Islam (ibaditisch)|0|Weihrauch, Dhau-Schiffe
+PAK|251|1400|1500|0.544|Urdu, Englisch, Punjabi|Parlamentarische Bundesrepublik|Islam|2|Sufi-Musik, Qawwali, Truck-Art
+PHL|115|3900|4000|0.720|Filipino, Englisch|Präsidialrepublik|Christentum (katholisch), Islam|2|Fiesta-Kultur, Familienbande
+QAT|3.1|70000|63000|0.886|Arabisch|Absolute Monarchie|Islam|0|Falknerei, Beduinentradition
+SAU|35.3|33000|32000|0.900|Arabisch|Absolute Monarchie|Islam (sunnitisch)|1|Mekka und Medina, Beduinenwurzeln
+SGP|5.9|88000|67000|0.946|Englisch, Mandarin, Malaiisch, Tamil|Parlamentarische Republik|Buddhismus, Christentum, Islam|0|Hawker-Küche, Multikulturalität
+KOR|51.7|36000|36000|0.937|Koreanisch|Präsidialrepublik|Konfessionslos, Christentum, Buddhismus|0|K-Pop, Kimchi, Hanbok
+LKA|22|4100|4000|0.776|Singhalesisch, Tamilisch|Präsidialrepublik|Buddhismus, Hinduismus|1|Tee, Ayurveda, buddhistische Tempel
+SYR|24.7|900|800|0.514|Arabisch|Übergangsregierung|Islam|3|Damaskus als alte Stadt, Levante-Küche
+TJK|10.6|1300|1300|0.691|Tadschikisch|Präsidialrepublik|Islam|1|Persisch geprägt, Pamir-Gebirge
+THA|66|7300|7100|0.798|Thai|Konstitutionelle Monarchie|Buddhismus|1|Tempel, Muay Thai, Songkran
+TLS|1.4|1500|2200|0.647|Tetum, Portugiesisch|Semipräsidentielle Republik|Christentum (katholisch)|0|Tais-Webkunst, junges Land
+TUR|87.5|15000|12900|0.853|Türkisch|Präsidialrepublik|Islam (sunnitisch)|1|Teehaus, Basar, Hammam
+TKM|7.5|8500|8500|0.764|Turkmenisch, Russisch|Präsidialrepublik (autoritär)|Islam|1|Achal-Tekkiner-Pferde, Teppiche
+ARE|11.3|50000|45000|0.940|Arabisch|Bundesmonarchie|Islam|0|Beduinenerbe, Wolkenkratzer
+UZB|36.4|2600|2500|0.740|Usbekisch, Russisch|Präsidialrepublik|Islam (sunnitisch)|0|Seidenstraße, Samarkand, Plov
+VNM|101|4700|4500|0.766|Vietnamesisch|Einparteienstaat|Konfessionslos, Buddhismus|0|Pho, Ao Dai, Wasserpuppentheater
+YEM|35.6|600|600|0.470|Arabisch|Bürgerkriegsland (geteilt)|Islam|3|Altstadt von Sanaa, Weihrauchhandel
+PSE|5.5|3200|3000|0.716|Arabisch|Teilautonomie (Autonomiebehörde)|Islam, Christentum|3|Olivenkultur, Stickkunst (Tatreez)
+ALB|2.4|8700|8300|0.810|Albanisch|Parlamentarische Republik|Islam, Christentum|0|Mehrstimmiger Gesang, Bunker-Erbe
+AND|0.08|44000|44000|0.884|Katalanisch|Konstitutionelles Co-Fürstentum|Christentum (katholisch)|0|Pyrenäen, Thermen
+AUT|9.1|54000|55000|0.930|Deutsch|Parlamentarische Bundesrepublik|Christentum (katholisch)|0|Klassische Musik, Kaffeehaus
+BLR|9.1|8000|7600|0.801|Belarussisch, Russisch|Präsidialrepublik (autoritär)|Christentum (orthodox)|3|Slawische Volkskunst, Kartoffelküche
+BEL|11.8|54000|52000|0.951|Niederländisch, Französisch, Deutsch|Parlamentarische Bundesmonarchie|Christentum, Konfessionslos|0|Bier, Schokolade, Comic
+BIH|3.2|8400|7800|0.804|Bosnisch, Kroatisch, Serbisch|Parlamentarische Republik (Föderation)|Islam, Christentum|0|Bosnischer Kaffee, Brücke von Mostar
+BGR|6.4|16000|16000|0.845|Bulgarisch|Parlamentarische Republik|Christentum (orthodox)|0|Kyrillische Schrift, Rosenöl, Joghurt
+HRV|3.9|21000|20800|0.906|Kroatisch|Parlamentarische Republik|Christentum (katholisch)|0|Adriaküste, Klapa-Gesang
+CYP|0.97|36000|33000|0.913|Griechisch, Türkisch|Präsidialrepublik|Christentum (orthodox), Islam|0|Geteilte Insel, Halloumi
+CZE|10.9|30000|28000|0.931|Tschechisch|Parlamentarische Republik|Konfessionslos, Christentum|0|Biertradition, Marionetten, Glaskunst
+DNK|6|70000|71000|0.952|Dänisch|Konstitutionelle Monarchie|Christentum (lutherisch)|0|Hygge, Design, Hans Christian Andersen
+EST|1.37|32000|27000|0.905|Estnisch|Parlamentarische Republik|Konfessionslos, Christentum|0|Sängerfest, digitaler Staat
+FIN|5.6|54000|52000|0.948|Finnisch, Schwedisch|Parlamentarische Republik|Christentum (lutherisch), Konfessionslos|0|Sauna, Sisu, Bildung
+FRA|68.4|46000|46000|0.920|Französisch|Semipräsidentielle Republik|Christentum, Konfessionslos|1|Gastronomie, Mode, Laizismus
+DEU|83.5|55000|55000|0.959|Deutsch|Parlamentarische Bundesrepublik|Christentum, Konfessionslos, Islam|0|Brotkultur, klassische Musik, Vereinswesen
+GRC|10.4|24500|24000|0.908|Griechisch|Parlamentarische Republik|Christentum (orthodox)|0|Antike, Philoxenia, Mezze
+HUN|9.6|22000|21000|0.866|Ungarisch|Parlamentarische Republik|Christentum, Konfessionslos|0|Thermalbäder, Paprika, Csárdás
+ISL|0.39|82000|78000|0.972|Isländisch|Parlamentarische Republik|Christentum (lutherisch)|0|Sagas, Vulkane, Lesekultur
+IRL|5.4|105000|70000|0.950|Irisch, Englisch|Parlamentarische Republik|Christentum (katholisch)|0|Pubs, Folk-Musik, Literatur
+ITA|58.9|40000|40000|0.915|Italienisch|Parlamentarische Republik|Christentum (katholisch)|0|Küche, Renaissance, Oper
+LVA|1.87|24000|21000|0.889|Lettisch|Parlamentarische Republik|Christentum|0|Sängerfest, Jahreszeiten-Bräuche
+LIE|0.04|190000|150000||Deutsch|Konstitutionelle Monarchie|Christentum (katholisch)|0|Alpenfürstentum, Briefmarken
+LTU|2.9|28500|25000|0.906|Litauisch|Semipräsidentielle Republik|Christentum (katholisch)|0|Baltische Sprache, Basketball
+LUX|0.67|135000|80000|0.922|Luxemburgisch, Französisch, Deutsch|Konstitutionelle Monarchie|Christentum (katholisch)|0|Dreisprachigkeit, Finanzplatz
+MLT|0.57|38000|32000|0.924|Maltesisch, Englisch|Parlamentarische Republik|Christentum (katholisch)|0|Johanniter-Erbe, Dorffeste
+MDA|2.4|7000|6300|0.793|Rumänisch (Moldauisch)|Parlamentarische Republik|Christentum (orthodox)|1|Wein, Folklore
+MCO|0.04|250000|200000||Französisch|Konstitutionelle Monarchie (Fürstentum)|Christentum (katholisch)|0|Grand Prix, Casino, Fürstenhaus
+MNE|0.62|12500|11500|0.862|Montenegrinisch|Parlamentarische Republik|Christentum (orthodox)|0|Bucht von Kotor, Gebirge
+NLD|18.1|63000|60000|0.955|Niederländisch|Konstitutionelle Monarchie|Konfessionslos, Christentum|0|Fahrrad, Malerei, Grachten
+MKD|1.8|7500|7200||Mazedonisch, Albanisch|Parlamentarische Republik|Christentum (orthodox), Islam|0|Ohridsee, Ikonen
+NOR|5.6|87000|90000|0.970|Norwegisch|Konstitutionelle Monarchie|Christentum (lutherisch)|0|Friluftsliv, Fjorde, Polarlicht
+POL|36.6|25000|22000|0.906|Polnisch|Parlamentarische Republik|Christentum (katholisch)|0|Pierogi, Chopin, Geschichte
+PRT|10.6|28000|26000|0.890|Portugiesisch|Semipräsidentielle Republik|Christentum (katholisch)|0|Fado, Azulejos, Seefahrer
+ROU|19|19500|17000|0.845|Rumänisch|Semipräsidentielle Republik|Christentum (orthodox)|0|Klöster, Volksmusik, Transsilvanien
+RUS|144|14000|14500|0.832|Russisch|Präsidialrepublik (autoritär)|Christentum (orthodox), Islam|3|Literatur, Ballett, Tee
+SMR|0.034|60000|55000||Italienisch|Parlamentarische Republik|Christentum (katholisch)|0|Älteste Republik, Festung
+SRB|6.6|12000|11500|0.833|Serbisch|Parlamentarische Republik|Christentum (orthodox)|0|Kyrillisch, Gastfreundschaft, Blasmusik
+SVK|5.4|22000|21000|0.866|Slowakisch|Parlamentarische Republik|Christentum (katholisch)|0|Burgen, Holzkirchen, Volkstanz
+SVN|2.1|33000|29000|0.931|Slowenisch|Parlamentarische Republik|Christentum (katholisch)|0|Naturverbundenheit, Imkerei
+ESP|48.9|35000|33000|0.918|Spanisch, Katalanisch, Galicisch, Baskisch|Parlamentarische Monarchie|Christentum (katholisch)|0|Flamenco, Tapas, Fiesta
+SWE|10.6|56000|58000|0.959|Schwedisch|Konstitutionelle Monarchie|Konfessionslos, Christentum|0|Fika, Lagom, Nobelpreis
+CHE|9|105000|95000|0.970|Deutsch, Französisch, Italienisch, Rätoromanisch|Direkte Demokratie (Bundesrepublik)|Christentum, Konfessionslos|0|Viersprachig, Uhren, Käse
+UKR|38|5500|5200|0.779|Ukrainisch|Semipräsidentielle Republik|Christentum (orthodox)|3|Wyschywanka, Borschtsch, Folklore
+GBR|69.3|52000|50000|0.946|Englisch|Parlamentarische Monarchie|Christentum, Konfessionslos|0|Pubs, Literatur, Fußball
+VAT|0.0008||||Italienisch, Latein|Absolute Wahlmonarchie|Christentum (katholisch)|0|Sitz der katholischen Kirche, Kunstschätze
+AUS|27.4|65000|64000|0.946|Englisch|Parlamentarische Bundesmonarchie|Christentum, Konfessionslos|0|Aboriginal-Kultur, Surfen, Barbecue
+FJI|0.93|6500|5800|0.774|Englisch, Fidschi, Hindi|Parlamentarische Republik|Christentum, Hinduismus|0|Kava-Zeremonie, Meke-Tanz
+KIR|0.13|2300|3500|0.624|Gilbertesisch, Englisch|Präsidialrepublik|Christentum|0|Atolle, Tanzkultur
+MHL|0.04|6500|6300||Marshallesisch, Englisch|Präsidialrepublik|Christentum|0|Navigationskunst mit Stabkarten
+FSM|0.11|3900|4100|0.627|Englisch, regionale Sprachen|Bundesrepublik|Christentum|0|Nan Madol, Seefahrertradition
+NRU|0.012|11000|12000||Nauruisch, Englisch|Präsidialrepublik|Christentum|0|Kleinste Republik, Phosphatgeschichte
+NZL|5.3|48000|47000|0.938|Englisch, Māori|Parlamentarische Monarchie|Christentum, Konfessionslos|0|Māori-Kultur, Haka, Rugby
+PLW|0.018|15000|14000||Palauisch, Englisch|Präsidialrepublik|Christentum|0|Felsinseln, Naturschutz
+PNG|10.3|3200|2700|0.568|Tok Pisin, Englisch, Hiri Motu|Parlamentarische Monarchie|Christentum|2|Über 800 Sprachen, Sing-Sing-Feste
+WSM|0.22|4000|4200|0.700|Samoanisch, Englisch|Parlamentarische Republik|Christentum|0|Fa'a Samoa, Tatau-Tätowierung
+SLB|0.74|2400|2300|0.562|Englisch, Pijin|Parlamentarische Monarchie|Christentum|0|Panflöten, Muschelgeld
+TON|0.1|5300|5500||Tongaisch, Englisch|Konstitutionelle Monarchie|Christentum|0|Königshaus, Tapa-Kunst
+TUV|0.01|5500|6000||Tuvaluisch, Englisch|Parlamentarische Monarchie|Christentum|0|Atollkultur, Fatele-Tanz
+VUT|0.33|3500|3100||Bislama, Englisch, Französisch|Parlamentarische Republik|Christentum|0|Landtaucher, Sandzeichnungen`;
+var SECT={'0':'Keine Warnung','1':'Teilweise Sicherheitshinweise','2':'Teilreisewarnung','3':'Reisewarnung'};
+var SNAPM={};
+SNAP.split('\n').forEach(function(l){var p=l.split('|');if(p.length<10)return;
+  SNAPM[p[0]]={pop:p[1]?Math.round(parseFloat(p[1])*1e6):null,gdp:p[2]?+p[2]:null,gni:p[3]?+p[3]:null,hdi:p[4]?parseFloat(p[4]):null,langs:p[5].split(', '),gov:p[6],rel:p[7],sec:p[8],cul:p[9]}});
+BASE.forEach(function(r){var s=SNAPM[r.iso3];if(!s)return;
+  r.pop=s.pop;r.gdp=s.gdp;r.gdpY=s.gdp!=null?'ca. 2024':'';r.gni=s.gni;r.gniY=s.gni!=null?'ca. 2024':'';
+  r.hdi=s.hdi;r.langs=s.langs;r.gov=s.gov;r.rel=s.rel;r.cul=s.cul;
+  r.sec={l:s.sec,t:SECT[s.sec]+' (Schätzung)'}});
+
+/* Zusatzdaten: ISO3|Breite|Länge (Hauptstadt)|Geburtenrate (Kinder pro Frau, ca.)|Sportarten|Sehenswürdigkeiten|Küche */
+var SNAP2=`DZA|36.75|3.06|2.7|Fußball, Handball, Leichtathletik|Kasbah von Algier, Tassili n'Ajjer, Timgad|Couscous, Chakhchoukha, Makroud
+AGO|-8.84|13.23|5.1|Fußball, Basketball, Rollhockey|Kalandula-Fälle, Kwanza-Küste, Fortaleza de São Miguel|Muamba de Galinha, Funge, Calulu
+BEN|6.50|2.63|4.7|Fußball, Leichtathletik|Königspaläste von Abomey, Ganvié (Stelzendorf), Pendjari-Park|Pâte, Amiwo, Akassa
+BWA|-24.65|25.91|2.7|Fußball, Leichtathletik|Okavango-Delta, Chobe-Nationalpark, Makgadikgadi-Salzpfannen|Seswaa, Bogobe, Mopane-Raupen
+BFA|12.37|-1.52|4.2|Fußball, Radsport, Leichtathletik|Ruinen von Loropéni, Sindou-Felsen, Museen von Ouagadougou|Tô, Riz gras, Poulet bicyclette
+BDI|-3.43|29.93|5.2|Fußball, Leichtathletik|Tanganjikasee, Rusizi-Park, Kibira-Nationalpark|Brochettes, Isombe, Bananenbier
+CPV|14.93|-23.51|2.0|Fußball, Basketball, Leichtathletik|Cidade Velha, Pico do Fogo, Strände von Sal|Cachupa, Grogue, Pastel com Diabo
+CMR|3.85|11.50|4.4|Fußball, Boxen, Radsport|Mount Cameroon, Waza-Park, Strände von Kribi|Ndolé, Poulet DG, Eru
+CAF|4.36|18.56|6.0|Fußball, Basketball|Dzanga-Sangha-Regenwald, Boali-Fälle, Märkte von Bangui|Maniokgerichte, Sauce Gombo, Raupen
+TCD|12.13|15.05|6.1|Fußball, Ringen, Leichtathletik|Tschadsee, Ennedi-Massiv, Zakouma-Park|Boule, Daraba, Aiysh
+COM|-11.70|43.26|4.2|Fußball, Leichtathletik|Karthala-Vulkan, Freitagsmoschee Moroni, Meerespark Mohéli|Langouste mit Vanille, Mataba, Pilaou
+COG|-4.27|15.28|4.2|Fußball, Handball, Leichtathletik|Odzala-Kokoua-Park, Basilika Sainte-Anne, Kouilou-Küste|Poulet Moambé, Saka-Saka, Maniokbrot
+COD|-4.44|15.27|6.0|Fußball, Basketball, Boxen|Virunga-Nationalpark, Kongo-Fluss, Nyiragongo-Vulkan|Moambe, Fufu, Liboke
+CIV|6.82|-5.28|4.4|Fußball, Rugby, Leichtathletik|Basilika von Yamoussoukro, Taï-Nationalpark, Grand-Bassam|Attiéké, Kedjenou, Alloco
+DJI|11.59|43.15|2.7|Fußball, Leichtathletik|Lac Assal, Lac Abbé, Goubet-Bucht|Skoudehkaris, Fahfah, Lahoh
+EGY|30.04|31.24|2.8|Fußball, Squash, Gewichtheben|Pyramiden von Gizeh, Tal der Könige (Luxor), Abu Simbel|Koshari, Ful Medames, Molokhia
+GNQ|3.75|8.78|4.0|Fußball, Leichtathletik|Pico Basilé, Strände von Bioko, Monte-Alén-Park|Pepe-Suppe, Maniok, Bananengerichte
+ERI|15.34|38.93|3.8|Radsport, Fußball|Art-déco-Stadt Asmara, Dahlak-Inseln, Massawa|Zigni, Injera, Kitcha fit-fit
+SWZ|-26.31|31.14|2.8|Fußball, Rugby|Hlane-Nationalpark, Mlilwane-Reservat, Ezulwini-Tal|Sishwala, Umncweba, Emasi
+ETH|9.03|38.75|4.0|Langstreckenlauf, Fußball, Radsport|Felsenkirchen von Lalibela, Simien-Berge, Stelen von Axum|Injera mit Wat, Kitfo, Kaffeezeremonie
+GAB|0.39|9.45|3.9|Fußball, Basketball|Loango-Park, Lopé-Park, Küste von Libreville|Poulet Nyembwe, Maniokblätter, Poisson braisé
+GMB|13.45|-16.58|4.5|Ringen, Fußball|Kunta-Kinteh-Insel, Abuko-Reservat, Gambia-Fluss|Domoda, Benachin, Yassa
+GHA|5.60|-0.19|3.7|Fußball, Boxen, Leichtathletik|Cape Coast Castle, Kakum-Nationalpark, Märkte von Kumasi|Jollof Rice, Fufu mit Erdnusssuppe, Kenkey
+GIN|9.64|-13.58|4.2|Fußball, Leichtathletik|Fouta Djallon, Îles de Los, Nimba-Berge|Riz sauce feuille, Poulet yassa, Fouti
+GNB|11.86|-15.60|4.2|Fußball, Leichtathletik|Bijagós-Archipel, Bissau Velho, Cacheu-Park|Caldo de Mancarra, Jollof, Cana (Zuckerrohrschnaps)
+KEN|-1.29|36.82|3.2|Langstreckenlauf, Rugby Sevens, Fußball|Masai Mara, Mount Kenya, Amboseli|Ugali, Nyama Choma, Sukuma Wiki
+LSO|-29.31|27.48|2.7|Fußball, Leichtathletik|Maletsunyane-Fälle, Thaba Bosiu, Sani-Pass|Papa, Moroho, Likhobe
+LBR|6.30|-10.80|4.0|Fußball|Sapo-Nationalpark, Providence Island, Strände von Robertsport|Jollof Rice, Palaversauce, Fufu
+LBY|32.89|13.19|2.2|Fußball, Reiten|Leptis Magna, Sabratha, Ghadames|Couscous, Bazin, Shorba
+MDG|-18.88|47.51|3.9|Rugby, Fußball, Pétanque|Baobab-Allee, Tsingy de Bemaraha, Andasibe (Lemuren)|Romazava, Ravitoto, Vary amin'anana
+MWI|-13.96|33.77|3.7|Fußball, Netball|Malawisee, Mulanje-Massiv, Liwonde-Park|Nsima, Chambo, Kapenta
+MLI|12.64|-8.00|5.6|Fußball, Basketball|Timbuktu, Lehmmoschee von Djenné, Dogon-Land|Tigadèguènè, Riz gras, Fonio
+MRT|18.08|-15.98|4.5|Fußball, Kamelrennen|Banc d'Arguin, Chinguetti, Erzbahn nach Choum|Méchoui, Thieboudienne, Kamelmilch
+MUS|-20.16|57.50|1.4|Fußball, Pferderennen, Badminton|Le Morne, Siebenfarbige Erde von Chamarel, Markt von Port Louis|Dholl Puri, Rougaille, Gâteau Piment
+MAR|34.02|-6.84|2.2|Fußball, Leichtathletik, Boxen|Medina von Fès, Jemaa el-Fna (Marrakesch), Chefchaouen|Tajine, Couscous, Pastilla
+MOZ|-25.97|32.57|4.7|Fußball, Basketball|Ilha de Moçambique, Bazaruto-Archipel, Gorongosa-Park|Matapa, Piri-Piri-Garnelen, Xima
+NAM|-22.56|17.08|3.2|Rugby, Fußball, Leichtathletik|Sossusvlei, Etosha-Park, Skelettküste|Kapana, Biltong, Potjiekos
+NER|13.51|2.11|6.1|Ringen, Fußball|Agadez und Aïr-Gebirge, W-Nationalpark, Ténéré-Wüste|Tuwo, Kilishi, Dambou
+NGA|9.08|7.40|4.5|Fußball, Boxen, Basketball|Zuma Rock, Olumo Rock, Yankari-Park|Jollof Rice, Egusi-Suppe, Suya
+RWA|-1.95|30.06|3.7|Radsport, Fußball, Basketball|Vulkan-Nationalpark (Berggorillas), Nyungwe-Wald, Kivusee|Ugali, Brochettes, Isombe
+STP|0.34|6.73|4.2|Fußball|Pico Cão Grande, Ilhéu das Rolas, Kakaoplantagen|Calulu, Brotfrucht, Schokolade
+SEN|14.72|-17.47|4.3|Ringen (Laamb), Fußball, Basketball|Insel Gorée, Lac Rose, Saloum-Delta|Thieboudienne, Yassa, Thiakry
+SYC|-4.62|55.45|2.2|Fußball, Basketball, Segeln|Anse Source d'Argent, Vallée de Mai, Strände von Mahé|Fischcurry, Oktopussalat, Ladob
+SLE|8.48|-13.23|3.7|Fußball|Tacugama-Schimpansenreservat, Bunce Island, River Number 2|Cassava-Blattsuppe, Jollof, Erdnusseintopf
+SOM|2.05|45.32|6.0|Fußball, Leichtathletik|Laas Geel (Felsmalereien), Hafen von Mogadischu, Küste bei Berbera|Bariis iskukaris, Canjeero, Sambuusa
+ZAF|-25.75|28.19|2.3|Rugby, Cricket, Fußball|Tafelberg, Krüger-Nationalpark, Kap der Guten Hoffnung|Braai, Biltong, Bobotie
+SSD|4.85|31.58|4.0|Fußball, Basketball|Boma-Park, Sudd-Sumpfgebiet am Nil, Märkte von Juba|Asida, Kisra, Nilfisch
+SDN|15.50|32.56|4.2|Fußball, Ringen|Pyramiden von Meroe, Zusammenfluss von Blauem und Weißem Nil, Jebel Barkal|Ful Medames, Kisra, Asida
+TZA|-6.16|35.74|4.7|Fußball, Leichtathletik|Serengeti, Kilimandscharo, Sansibar|Ugali, Nyama Choma, Pilau
+TGO|6.13|1.22|4.2|Fußball, Leichtathletik|Koutammakou-Lehmhäuser, Togosee, Fazao-Malfakassa-Park|Fufu, Akume, Pâte rouge
+TUN|36.81|10.18|2.1|Fußball, Handball, Tennis|Karthago, Sidi Bou Said, Djerba|Couscous, Brik, Harissa
+UGA|0.35|32.58|4.3|Fußball, Leichtathletik, Boxen|Bwindi-Gorillas, Murchison Falls, Nilquelle bei Jinja|Matoke, Rolex, Luwombo
+ZMB|-15.39|28.32|4.2|Fußball, Boxen|Victoriafälle, South-Luangwa-Park, Sambesi|Nshima, Kapenta, Ifisashi
+ZWE|-17.83|31.05|3.7|Cricket, Fußball, Rugby|Victoriafälle, Great Zimbabwe, Mana Pools|Sadza, Nyama, Mopane-Würmer
+ATG|17.12|-61.85|1.6|Cricket, Segeln|Nelson's Dockyard, Shirley Heights, Strände|Ducana, Fungie, Pepperpot
+ARG|-34.60|-58.38|1.5|Fußball, Polo, Rugby|Iguazú-Fälle, Perito-Moreno-Gletscher, La Boca (Buenos Aires)|Asado, Empanadas, Dulce de leche
+BHS|25.05|-77.35|1.4|Leichtathletik, Segeln, Basketball|Exuma-Inseln (Schwimmschweine), Atlantis Resort, Strände von Nassau|Conch Salad, Cracked Conch, Rum Cake
+BRB|13.10|-59.61|1.6|Cricket, Segeln|Bathsheba-Küste, Harrison's Cave, Garnison von Bridgetown|Cou-Cou mit Flying Fish, Macaroni Pie, Rum
+BLZ|17.25|-88.77|2.0|Fußball, Basketball|Great Blue Hole, Barrier Reef, Maya-Stätte Caracol|Rice and Beans, Hudut, Fry Jacks
+BOL|-19.04|-65.26|2.5|Fußball, Racquetball|Salar de Uyuni, Titicacasee, Potosí|Salteñas, Silpancho, Chuño
+BRA|-15.79|-47.88|1.6|Fußball, Volleyball, Capoeira|Christusstatue, Amazonas, Zuckerhut (Rio)|Feijoada, Churrasco, Pão de Queijo
+CAN|45.42|-75.70|1.3|Eishockey, Lacrosse, Curling|Niagarafälle, Banff-Nationalpark, CN Tower|Poutine, Ahornsirup, Butter Tarts
+CHL|-33.45|-70.67|1.2|Fußball, Rodeo, Tennis|Torres del Paine, Atacama-Wüste, Osterinsel|Empanadas de pino, Pastel de choclo, Wein
+COL|4.71|-74.07|1.7|Fußball, Radsport, Tejo|Cartagena, Kaffeedreieck, Ciudad Perdida|Bandeja paisa, Arepas, Ajiaco
+CRI|9.93|-84.08|1.3|Fußball, Surfen|Arenal-Vulkan, Nebelwald Monteverde, Manuel-Antonio-Park|Gallo pinto, Casado, Ceviche
+CUB|23.11|-82.37|1.4|Baseball, Boxen, Volleyball|Altstadt von Havanna, Viñales-Tal, Trinidad|Ropa vieja, Moros y Cristianos, Cubano-Sandwich
+DMA|15.30|-61.39|1.9|Cricket, Fußball|Morne Trois Pitons, Boiling Lake, Champagne Reef|Callaloo, Bakes, Krabbengerichte
+DOM|18.49|-69.93|2.2|Baseball, Fußball, Boxen|Zona Colonial (Santo Domingo), Punta Cana, Samaná|La Bandera, Mangú, Sancocho
+ECU|-0.18|-78.47|1.8|Fußball, Radsport, Ecuavolley|Galápagos, Altstadt von Quito, Cotopaxi|Ceviche, Locro de papa, Encebollado
+SLV|13.69|-89.19|1.8|Fußball, Surfen|Santa-Ana-Vulkan, Joya de Cerén, Ruta de las Flores|Pupusas, Yuca frita, Horchata
+GRD|12.05|-61.75|2.1|Cricket, Segeln, Leichtathletik|Grand Anse Beach, Unterwasser-Skulpturenpark, Grand Etang|Oil Down, Muskatnuss-Eis, Callaloo-Suppe
+GTM|14.63|-90.51|2.4|Fußball, Radsport|Tikal, Antigua Guatemala, Atitlánsee|Pepián, Tamales, Kak'ik
+GUY|6.80|-58.16|2.4|Cricket, Fußball|Kaieteur-Fälle, Rupununi-Savanne, Holzbauten von Georgetown|Pepperpot, Cook-up Rice, Roti mit Curry
+HTI|18.59|-72.31|2.7|Fußball, Basketball|Citadelle Laferrière, Labadee, Jacmel|Griot, Diri ak djon djon, Pikliz
+HND|14.07|-87.19|2.4|Fußball|Maya-Ruinen von Copán, Roatán, Pico Bonito|Baleadas, Schneckensuppe, Pollo con tajadas
+JAM|18.00|-76.79|1.4|Leichtathletik, Cricket, Fußball|Blue Mountains, Dunn's River Falls, Bob-Marley-Museum|Jerk Chicken, Ackee mit Saltfish, Patties
+MEX|19.43|-99.13|1.8|Fußball, Boxen, Lucha libre|Chichén Itzá, Teotihuacán, Altstadt von Mexiko-Stadt|Tacos, Mole, Tamales
+NIC|12.11|-86.24|2.3|Baseball, Boxen, Fußball|Granada, Ometepe-Insel, Masaya-Vulkan|Gallo pinto, Nacatamal, Vigorón
+PAN|8.98|-79.52|2.3|Baseball, Boxen, Fußball|Panamakanal, Casco Viejo, San-Blas-Inseln|Sancocho, Ceviche, Patacones
+PRY|-25.26|-57.58|2.4|Fußball, Volleyball|Jesuitenreduktionen, Altstadt von Asunción, Gran Chaco|Sopa paraguaya, Chipa, Asado
+PER|-12.05|-77.04|2.1|Fußball, Volleyball, Surfen|Machu Picchu, Cusco, Nazca-Linien|Ceviche, Lomo saltado, Pisco Sour
+KNA|17.30|-62.72|1.6|Cricket, Fußball|Festung Brimstone Hill, Mount Liamuiga, Altstadt von Basseterre|Goat Water, Saltfish, Johnny Cakes
+LCA|14.01|-60.99|1.4|Cricket, Fußball, Leichtathletik|Pitons, Schwefelquellen von Soufrière, Marigot Bay|Green Fig and Saltfish, Bouyon, Fish Friday
+VCT|13.16|-61.23|1.8|Cricket, Fußball, Segeln|La Soufrière, Tobago Cays, Botanischer Garten Kingstown|Gebratene Brotfrucht, Fried Jackfish, Callaloo
+SUR|5.85|-55.20|2.2|Fußball, Badminton|Zentral-Suriname-Naturreservat, Altstadt von Paramaribo, Brownsberg|Pom, Roti, Bami
+TTO|10.66|-61.51|1.7|Cricket, Fußball, Leichtathletik|Karneval, Maracas Bay, Pitch Lake|Doubles, Roti, Callaloo
+USA|38.91|-77.04|1.6|American Football, Basketball, Baseball|Grand Canyon, Freiheitsstatue, Yellowstone|Burger, BBQ, Apple Pie
+URY|-34.90|-56.19|1.5|Fußball, Rugby, Basketball|Colonia del Sacramento, Punta del Este, Altstadt von Montevideo|Asado, Chivito, Dulce de leche
+VEN|10.48|-66.90|2.2|Baseball, Fußball, Basketball|Salto Ángel, Los Roques, Roraima-Tepui|Arepas, Pabellón criollo, Hallacas
+AFG|34.53|69.17|4.8|Buzkaschi, Kricket, Fußball|Minarett von Jam, Nischen der Buddhas von Bamiyan, Band-e Amir|Kabuli Pulao, Mantu, Naan
+ARM|40.18|44.51|1.6|Gewichtheben, Schach, Ringen|Kloster Chor Virap, Etschmiadsin, Sewansee|Khorovats, Lawasch, Dolma
+AZE|40.41|49.87|1.6|Ringen, Schach, Fußball|Flame Towers (Baku), Altstadt Icheri Sheher, Gobustan|Plov, Dolma, Baklava
+BHR|26.23|50.58|1.8|Fußball, Formel 1, Handball|Bahrain Fort, Grabhügel von Dilmun, Tree of Life|Machboos, Muhammar, Halwa
+BGD|23.81|90.41|2.0|Kricket, Fußball, Kabaddi|Sundarbans, Cox's Bazar, Kloster Paharpur|Hilsa-Fisch, Biryani, Panta Bhat
+BTN|27.47|89.64|1.4|Bogenschießen, Fußball|Tigernest-Kloster, Punakha Dzong, Dochula-Pass|Ema Datshi, Momos, Buttertee
+BRN|4.89|114.94|1.7|Fußball, Badminton|Omar-Ali-Saifuddien-Moschee, Kampong Ayer, Ulu-Temburong|Ambuyat, Nasi Katok, Kuih
+KHM|11.56|104.92|2.4|Fußball, Pradal Serey (Kickboxen), Volleyball|Angkor Wat, Tonle Sap, Königspalast Phnom Penh|Amok, Lok Lak, Num Banh Chok
+CHN|39.90|116.41|1.0|Tischtennis, Badminton, Basketball|Große Mauer, Verbotene Stadt, Terrakotta-Armee|Peking-Ente, Dim Sum, Hotpot
+GEO|41.72|44.79|1.8|Ringen, Rugby, Fußball|Altstadt von Tiflis, Kasbegi, Wardsia|Khachapuri, Khinkali, Churchkhela
+IND|28.61|77.21|2.0|Kricket, Hockey, Kabaddi|Taj Mahal, Rotes Fort (Delhi), Rajasthan (Jaipur)|Biryani, Butter Chicken, Masala Dosa
+IDN|-6.21|106.85|2.1|Badminton, Fußball, Pencak Silat|Borobudur, Bali, Komodo-Nationalpark|Nasi Goreng, Rendang, Satay
+IRN|35.69|51.39|1.7|Ringen, Fußball, Gewichtheben|Persepolis, Imam-Platz (Isfahan), Shiraz|Chelo Kabab, Ghormeh Sabzi, Tahdig
+IRQ|33.31|44.37|3.2|Fußball, Gewichtheben|Babylon, Ur, Minarett von Samarra|Masgouf, Dolma, Kubba
+ISR|31.77|35.22|2.9|Fußball, Basketball, Judo|Altstadt von Jerusalem, Totes Meer, Masada|Hummus, Falafel, Shakshuka
+JPN|35.68|139.69|1.2|Baseball, Sumo, Judo|Fuji, Tempel von Kyoto, Shibuya (Tokio)|Sushi, Ramen, Tempura
+JOR|31.95|35.93|2.6|Fußball, Taekwondo|Petra, Wadi Rum, Totes Meer|Mansaf, Falafel, Knafeh
+KAZ|51.17|71.45|3.0|Boxen, Radsport, Ringen|Baiterek-Turm, Charyn-Canyon, Mausoleum von Yasawi|Beshbarmak, Baursak, Kumys
+KWT|29.38|47.99|1.9|Fußball, Handball, Schießen|Kuwait Towers, Große Moschee, Failaka-Insel|Machboos, Jireesh, Gers Ogaily
+KGZ|42.87|74.59|2.9|Ringen, Kok-Boru (Reiterspiel), Fußball|Issyk-Kul, Ala-Archa-Nationalpark, Song-Kul|Beshbarmak, Lagman, Kymys
+LAO|17.97|102.60|2.4|Takraw, Fußball, Pétanque|Kuang-Si-Wasserfälle, Luang Prabang, Ebene der Tonkrüge|Larb, Klebreis, Tam Mak Hoong
+LBN|33.89|35.50|2.1|Basketball, Fußball, Skifahren|Baalbek, Zedern Gottes, Jeita-Grotte|Hummus, Tabouleh, Kibbeh
+MYS|3.14|101.69|1.7|Badminton, Fußball, Squash|Petronas Towers, Batu-Höhlen, Borneo-Regenwald|Nasi Lemak, Laksa, Satay
+MDV|4.18|73.51|1.7|Fußball, Volleyball, Tauchen|Atolle, Hukuru-Moschee, Wasserbungalows|Garudhiya, Mas Huni, Hedhikaa
+MNG|47.92|106.92|2.8|Ringen, Bogenschießen, Pferderennen|Gobi-Wüste, Karakorum, Dschingis-Khan-Statue|Buuz, Khorkhog, Airag
+MMR|19.76|96.08|2.1|Chinlone, Fußball, Lethwei (Boxen)|Bagan, Shwedagon-Pagode, Inle-See|Mohinga, Laphet Thoke, Shan-Nudeln
+NPL|27.72|85.32|2.0|Fußball, Kricket, Volleyball|Mount Everest, Pashupatinath, Pokhara|Dal Bhat, Momo, Sel Roti
+PRK|39.04|125.76|1.8|Fußball, Taekwondo, Gewichtheben|Triumphbogen Pjöngjang, Kumsusan-Palast, Kaesong|Naengmyeon, Kimchi, Bulgogi
+OMN|23.59|58.41|2.7|Fußball, Kamelrennen, Segeln|Sultan-Qabus-Moschee, Wahiba-Sands, Fort von Nizwa|Shuwa, Halwa, Kahwa
+PAK|33.68|73.05|3.5|Kricket, Hockey, Squash|Badshahi-Moschee, K2, Hunza-Tal|Biryani, Nihari, Seekh Kebab
+PHL|14.60|120.98|1.9|Basketball, Boxen, Billard|Chocolate Hills, Palawan, Reisterrassen von Banaue|Adobo, Sinigang, Halo-Halo
+QAT|25.29|51.53|1.8|Fußball, Kamelrennen, Falknerei|Museum für Islamische Kunst, Souq Waqif, The Pearl|Machboos, Harees, Karak-Tee
+SAU|24.71|46.68|2.2|Fußball, Falknerei, Kamelrennen|Mekka, Medina, Hegra (Al-Ula)|Kabsa, Mutabbaq, Datteln mit Kaffee
+SGP|1.35|103.82|1.0|Fußball, Badminton, Tischtennis|Marina Bay Sands, Gardens by the Bay, Sentosa|Hainanese Chicken Rice, Chilli Crab, Laksa
+KOR|37.57|126.98|0.7|Taekwondo, Baseball, E-Sport|Gyeongbokgung-Palast, Jeju, Bulguksa|Kimchi, Bibimbap, Korean BBQ
+LKA|6.89|79.92|2.0|Kricket, Volleyball, Rugby|Sigiriya, Zahntempel (Kandy), Galle Fort|Rice and Curry, Kottu, Hoppers
+SYR|33.51|36.29|2.7|Fußball, Basketball|Umayyaden-Moschee, Palmyra, Krak des Chevaliers|Kibbeh, Fattoush, Muhammara
+TJK|38.56|68.77|3.0|Ringen, Fußball, Schach|Pamir Highway, Iskanderkul, Festung Hissar|Plov, Qurutob, Sambusa
+THA|13.76|100.50|1.2|Muay Thai, Fußball, Takraw|Großer Palast, Ayutthaya, Phuket und Krabi|Pad Thai, Tom Yum, Grünes Curry
+TLS|-8.56|125.57|2.6|Fußball, Leichtathletik|Cristo Rei, Atauro-Insel, Mount Ramelau|Ikan Pepes, Batar Da'an, Saboko
+TUR|39.93|32.86|1.5|Fußball, Ringen, Volleyball|Hagia Sophia, Kappadokien, Ephesos|Kebab, Baklava, Meze
+TKM|37.96|58.33|2.7|Fußball, Ringen, Pferdesport|Darwaza (Tor zur Hölle), Alt-Nisa, Kow-Ata|Plov, Manty, Chorek
+ARE|24.45|54.38|1.4|Fußball, Kamelrennen, Cricket|Burj Khalifa, Scheich-Zayid-Moschee, Louvre Abu Dhabi|Machboos, Shawarma, Luqaimat
+UZB|41.30|69.24|3.4|Ringen, Boxen, Fußball|Registan (Samarkand), Buchara, Chiwa|Plov, Shashlik, Samsa
+VNM|21.03|105.85|2.0|Fußball, Badminton, Volleyball|Halong-Bucht, Hoi An, Altstadt von Hanoi|Pho, Banh Mi, Frühlingsrollen
+YEM|15.37|44.19|4.4|Fußball|Altstadt von Sanaa, Sokotra, Shibam|Saltah, Mandi, Fahsa
+PSE|31.90|35.20|3.5|Fußball|Geburtskirche (Bethlehem), Altstadt von Hebron, Jericho|Maqluba, Musakhan, Knafeh
+ALB|41.33|19.82|1.4|Fußball, Gewichtheben, Basketball|Berat, Gjirokastra, Albanische Riviera|Tavë Kosi, Byrek, Fërgesë
+AND|42.51|1.52|1.2|Skifahren, Rugby, Radsport|Grandvalira, Caldea-Thermen, Madriu-Perafita-Claror-Tal|Trinxat, Escudella, Cremat
+AUT|48.21|16.37|1.3|Skifahren, Fußball, Rodeln|Schloss Schönbrunn, Salzburg, Hallstatt|Wiener Schnitzel, Apfelstrudel, Kaiserschmarrn
+BLR|53.90|27.57|1.3|Eishockey, Biathlon, Fußball|Schloss Mir, Urwald von Białowieża, Minsk|Draniki, Machanka, Borschtsch
+BEL|50.85|4.35|1.4|Radsport, Fußball, Tennis|Grand-Place (Brüssel), Brügge, Atomium|Pommes frites, Waffeln, Pralinen
+BIH|43.86|18.41|1.4|Fußball, Basketball, Rafting|Alte Brücke von Mostar, Baščaršija (Sarajevo), Kravica-Wasserfälle|Ćevapi, Burek, Bosanski lonac
+BGR|42.70|23.32|1.6|Fußball, Gewichtheben, Ringen|Rila-Kloster, Weliko Tarnowo, Sieben Rila-Seen|Banitsa, Schopska-Salat, Kebapche
+HRV|45.81|15.98|1.4|Fußball, Handball, Wasserball|Dubrovnik, Plitvicer Seen, Split|Peka, Schwarzes Risotto, Štrukli
+CYP|35.19|33.38|1.3|Fußball, Basketball, Segeln|Mosaike von Paphos, Troodos-Gebirge, Kourion|Halloumi, Souvlaki, Meze
+CZE|50.08|14.44|1.6|Eishockey, Fußball, Tennis|Prager Burg, Karlsbrücke, Český Krumlov|Svíčková, Knödel, Bier
+DNK|55.68|12.57|1.5|Handball, Fußball, Radsport|Nyhavn, Tivoli, Schloss Kronborg|Smørrebrød, Frikadeller, Wienerbrød
+EST|59.44|24.75|1.4|Skilanglauf, Basketball, Ringen|Altstadt von Tallinn, Lahemaa-Nationalpark, Saaremaa|Verivorst, Kama, Schwarzbrot
+FIN|60.17|24.94|1.3|Eishockey, Skispringen, Wintersport|Dom von Helsinki, Nordlichter in Lappland, Suomenlinna|Karelische Piroggen, Lachssuppe, Salmiakki
+FRA|48.86|2.35|1.7|Fußball, Rugby, Radsport|Eiffelturm, Louvre, Mont-Saint-Michel|Baguette, Käse, Croissant
+DEU|52.52|13.40|1.35|Fußball, Handball, Tennis|Brandenburger Tor, Schloss Neuschwanstein, Kölner Dom|Brezel, Bratwurst, Schwarzwälder Kirschtorte
+GRC|37.98|23.73|1.3|Fußball, Basketball, Wasserball|Akropolis, Meteora-Klöster, Santorin|Moussaka, Souvlaki, Griechischer Salat
+HUN|47.50|19.04|1.5|Fußball, Wasserball, Fechten|Parlament (Budapest), Fischerbastei, Széchenyi-Thermalbad|Gulasch, Lángos, Dobos-Torte
+ISL|64.15|-21.94|1.6|Handball, Fußball, Reiten|Golden Circle (Gullfoss), Blaue Lagune, Jökulsárlón|Skyr, Lammsuppe, Hákarl
+IRL|53.35|-6.26|1.5|Gaelic Football, Hurling, Rugby|Cliffs of Moher, Ring of Kerry, Guinness Storehouse|Irish Stew, Soda Bread, Guinness
+ITA|41.90|12.50|1.2|Fußball, Radsport, Volleyball|Kolosseum, Venedig, Florenz|Pizza, Pasta, Gelato
+LVA|56.95|24.11|1.4|Eishockey, Basketball, Bobfahren|Jugendstil in Riga, Gauja-Nationalpark, Schloss Rundāle|Graue Erbsen mit Speck, Rūpjmaize, Piragi
+LIE|47.14|9.52|1.5|Skifahren, Fußball, Radsport|Schloss Vaduz, Alpenlandschaft, Malbun|Käsknöpfle, Ribel, Funkaküechle
+LTU|54.69|25.28|1.2|Basketball, Fußball, Radsport|Altstadt von Vilnius, Trakai, Kurische Nehrung|Cepelinai, Šaltibarščiai, Kibinai
+LUX|49.61|6.13|1.4|Radsport, Fußball, Tischtennis|Bock-Kasematten, Vianden, Altstadt von Luxemburg|Judd mat Gaardebounen, Kniddelen, Gromperekichelcher
+MLT|35.90|14.51|1.1|Wasserball, Fußball, Segeln|Valletta, Mdina, Blue Grotto|Pastizzi, Fenkata, Ftira
+MDA|47.01|28.86|1.7|Ringen, Boxen, Fußball|Weinkeller von Cricova, Orheiul Vechi, Chișinău|Mămăligă, Plăcinte, Sarmale
+MCO|43.74|7.42|1.8|Formel 1, Fußball, Segeln|Casino von Monte Carlo, Fürstenpalast, Ozeanographisches Museum|Barbagiuan, Fougasse, Socca
+MNE|42.44|19.26|1.7|Wasserball, Fußball, Basketball|Bucht von Kotor, Durmitor, Budva|Njeguški pršut, Kačamak, Cicvara
+NLD|52.37|4.90|1.4|Fußball, Eisschnelllauf, Hockey|Grachten von Amsterdam, Keukenhof, Kinderdijk|Stroopwafel, Matjes, Bitterballen
+MKD|42.00|21.43|1.5|Handball, Fußball, Ringen|Ohridsee, Matka-Schlucht, Altstadt von Skopje|Tavče Gravče, Ajvar, Burek
+NOR|59.91|10.75|1.4|Skilanglauf, Biathlon, Fußball|Geirangerfjord, Nordlichter bei Tromsø, Vigeland-Park|Lachs, Rakfisk, Brunost
+POL|52.23|21.01|1.3|Fußball, Volleyball, Skispringen|Altstadt von Krakau, Salzbergwerk Wieliczka, Marienburg|Pierogi, Bigos, Żurek
+PRT|38.72|-9.14|1.4|Fußball, Rollhockey, Surfen|Torre de Belém, Ribeira (Porto), Algarve|Pastel de nata, Bacalhau, Francesinha
+ROU|44.43|26.10|1.7|Fußball, Handball, Turnen|Schloss Bran, Moldauklöster, Donaudelta|Sarmale, Mămăligă, Mici
+RUS|55.76|37.62|1.4|Eishockey, Fußball, Schach|Roter Platz, Eremitage (St. Petersburg), Baikalsee|Borschtsch, Pelmeni, Blini
+SMR|43.94|12.45|1.2|Fußball, Motorsport, Armbrustschießen|Monte Titano, Guaita-Festung, Altstadt|Piadina, Torta Tre Monti, Nidi di Rondine
+SRB|44.79|20.45|1.5|Fußball, Basketball, Wasserball|Festung Belgrad, Petrovaradin (Novi Sad), Kloster Studenica|Ćevapčići, Sarma, Pljeskavica
+SVK|48.15|17.11|1.5|Eishockey, Fußball, Tennis|Burg Bratislava, Hohe Tatra, Zipser Burg|Bryndzové halušky, Kapustnica, Trdelník
+SVN|46.06|14.51|1.6|Skispringen, Radsport, Basketball|Bleder See, Höhlen von Škocjan, Ljubljana|Potica, Kranjska klobasa, Žlikrofi
+ESP|40.42|-3.70|1.2|Fußball, Tennis, Basketball|Sagrada Família, Alhambra, Prado|Paella, Tapas, Tortilla
+SWE|59.33|18.07|1.45|Eishockey, Fußball, Skilanglauf|Gamla Stan, Vasa-Museum, Lappland (Abisko)|Köttbullar, Gravlax, Zimtschnecken
+CHE|46.95|7.45|1.4|Skifahren, Tennis, Schwingen|Matterhorn, Jungfrau, Kapellbrücke (Luzern)|Fondue, Raclette, Rösti
+UKR|50.45|30.52|1.2|Fußball, Boxen, Gymnastik|Sophienkathedrale (Kiew), Altstadt von Lemberg, Karpaten|Borschtsch, Wareniki, Salo
+GBR|51.51|-0.13|1.55|Fußball, Cricket, Rugby|Big Ben, Stonehenge, Edinburgh Castle|Fish and Chips, Sunday Roast, Full English Breakfast
+VAT|41.90|12.45||Cricket, Fußball (Clericus Cup)|Petersdom, Sixtinische Kapelle, Vatikanische Museen|Römische Küche, Pasta, Pizza al taglio
+AUS|-35.28|149.13|1.5|Cricket, Rugby, Australian Football|Sydney Opera House, Uluru, Great Barrier Reef|Meat Pie, Lamington, Pavlova
+FJI|-18.14|178.44|2.4|Rugby, Rugby Sevens, Fußball|Mamanuca-Inseln, Sabeto Mud Pool, Kula Eco Park|Kokoda, Lovo, Rourou
+KIR|1.45|173.03|3.5|Leichtathletik, Gewichtheben, Fußball|Tarawa-Atoll, Kiritimati, Phoenix-Inseln-Schutzgebiet|Gegrillter Fisch, Kokosnuss, Brotfrucht
+MHL|7.09|171.38|3.8|Basketball, Volleyball, Segeln|Bikini-Atoll, Majuro, Arno-Atoll|Brotfrucht, Kokosgerichte, Fisch
+FSM|6.92|158.16|3.0|Basketball, Ringen, Leichtathletik|Nan Madol, Chuuk-Lagune (Wracktauchen), Kosrae|Brotfrucht, Taro, Fisch
+NRU|-0.55|166.92|3.5|Gewichtheben, Australian Football, Fußball|Buada-Lagune, Command Ridge, Anibare Bay|Kokosfisch, Brotfrucht, Reis
+NZL|-41.29|174.78|1.6|Rugby, Cricket, Segeln|Milford Sound, Hobbiton, Rotorua|Hāngī, Pavlova, Fish and Chips
+PLW|7.50|134.62|1.9|Baseball, Tauchen, Leichtathletik|Rock Islands, Jellyfish Lake, Ngardmau-Wasserfall|Taro, Kokoskrabbe, Fisch
+PNG|-9.44|147.18|3.1|Rugby League, Fußball|Kokoda Track, Mount Wilhelm, Sepik-Fluss|Mumu, Sago, Kokosfisch
+WSM|-13.83|-171.76|3.7|Rugby, Kilikiti (Kricket), Fußball|To Sua Ocean Trench, Lalomanu-Strand, Robert-Louis-Stevenson-Museum|Palusami, Oka, Fa'ausi
+SLB|-9.43|159.95|4.0|Fußball, Rugby, Kanu|Marovo-Lagune, Weltkriegswracks, Guadalcanal|Fisch, Taro, Kokosnuss
+TON|-21.14|-175.20|3.5|Rugby, Boxen, Taekwondo|Ha'amonga-Trilithon, Walbeobachtung in Vava'u, Königsgräber|Lu Pulu, 'Ota 'ika, Umu
+TUV|-8.52|179.20|3.0|Fußball, Volleyball, Te Ano|Funafuti-Lagune, Fongafale, Atollstrände|Pulaka, Fisch, Kokosnuss
+VUT|-17.73|168.32|3.7|Fußball, Kricket, Rugby|Vulkan Yasur, Landtaucher auf Pentecost, Blaue Löcher|Lap Lap, Tuluk, Kava`;
+var S2={};
+SNAP2.split('\n').forEach(function(l){var p=l.split('|');if(p.length<7)return;
+  S2[p[0]]={lat:parseFloat(p[1]),lon:parseFloat(p[2]),tfr:p[3]?parseFloat(p[3]):null,sport:p[4],sights:p[5],food:p[6]}});
+BASE.forEach(function(r){var s=S2[r.iso3];if(!s)return;
+  r.lat=s.lat;r.lon=s.lon;r.tfr=s.tfr;r.tfrY=s.tfr!=null?'ca. 2023':'';r.sport=s.sport;r.sights=s.sights;r.food=s.food});
+
+var state={rows:BASE,ts:null,src:{},wiki:{}};
+var langNames=null;
+try{langNames=new Intl.DisplayNames(['de'],{type:'language',fallback:'code'})}catch(e){}
+
+function j(url){return fetch(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
+
+function loadWB(ind){
+  return j('https://api.worldbank.org/v2/country/all/indicator/'+ind+'?format=json&per_page=400&mrnev=1').then(function(d){
+    var m={};(d[1]||[]).forEach(function(r){if(r.countryiso3code&&r.value!=null)m[r.countryiso3code]={v:r.value,y:r.date}});return m;
+  });
+}
+function loadWikidata(){
+  var q='SELECT ?iso3 (GROUP_CONCAT(DISTINCT ?govL;separator=", ") AS ?gov) (MAX(?hdi) AS ?hdiV) (GROUP_CONCAT(DISTINCT ?relL;separator=", ") AS ?rels) WHERE {'+
+  '?c wdt:P298 ?iso3 . ?c wdt:P31 wd:Q3624078 . FILTER NOT EXISTS {?c wdt:P576 ?end}'+
+  ' OPTIONAL {?c wdt:P122 ?g . ?g rdfs:label ?govL FILTER(lang(?govL)="de")}'+
+  ' OPTIONAL {?c wdt:P1081 ?hdi}'+
+  ' OPTIONAL {?c wdt:P140 ?r . ?r rdfs:label ?relL FILTER(lang(?relL)="de")}'+
+  '} GROUP BY ?iso3';
+  return j('https://query.wikidata.org/sparql?format=json&query='+encodeURIComponent(q)).then(function(d){
+    var m={};d.results.bindings.forEach(function(b){
+      m[b.iso3.value]={gov:b.gov&&b.gov.value,hdi:b.hdiV&&b.hdiV.value?parseFloat(b.hdiV.value):null,rel:b.rels&&b.rels.value};
+    });return m;
+  });
+}
+/* Sicherheitslage: erst Auswärtiges Amt (Browser-Zugriff wird dort oft per CORS blockiert),
+   dann als Ausweichquelle travel-advisory.info (CORS-freundlich, Risiko-Score 0–5). */
+function loadAA(){
+  return j('https://www.auswaertiges-amt.de/opendata/travelwarning').then(function(d){
+    var r=d.response||d,out={};
+    Object.keys(r).forEach(function(k){var v=r[k];
+      if(v&&typeof v==='object'){var c=v.iso3CountryCode||v.countryCode;if(c)out[String(c).toUpperCase()]=v}});
+    if(!Object.keys(out).length)throw new Error('leer');
+    return {type:'aa',data:out};
+  });
+}
+function loadTA(){
+  return j('https://www.travel-advisory.info/api').then(function(d){
+    var out={},x=d.data||{};
+    Object.keys(x).forEach(function(k){var a=x[k]&&x[k].advisory;if(a&&a.score!=null)out[k.toUpperCase()]=a.score});
+    if(!Object.keys(out).length)throw new Error('leer');
+    return {type:'ta',data:out};
+  });
+}
+function loadSec(){
+  return loadAA().catch(function(e1){
+    return loadTA().catch(function(e2){
+      throw new Error('Auswärtiges Amt: '+e1.message+'; travel-advisory.info: '+e2.message);
+    });
+  });
+}
+
+function secOf(sec,r){
+  if(!sec)return null;
+  if(sec.type==='ta'){
+    var s=sec.data[r.iso2];if(s==null)return null;
+    var lv=s<2.5?0:s<3.5?1:s<4.5?2:3;
+    var tx=['Geringes Risiko','Erhöhte Vorsicht','Hohes Risiko','Sehr hohes Risiko'][lv];
+    return {l:String(lv),t:tx+' (Score '+String(s).replace('.',',')+' von 5, travel-advisory.info)'};
+  }
+  var v=sec.data[r.iso3]||sec.data[r.iso2];
+  if(!v)return {l:'0',t:'Keine Warnung des Auswärtigen Amts'};
+  if(v.warning)return {l:'3',t:'Reisewarnung'};
+  if(v.partialWarning)return {l:'2',t:'Teilreisewarnung'};
+  if(v.situationWarning)return {l:'2',t:'Sicherheitshinweis (Lage)'};
+  if(v.situationPartWarning)return {l:'1',t:'Teilweise Sicherheitshinweise'};
+  return {l:'0',t:'Keine Warnung des Auswärtigen Amts'};
+}
+function hdiCat(h){if(h==null)return '';return h>=0.8?'sehr hoch':h>=0.7?'hoch':h>=0.55?'mittel':'niedrig'}
+function langList(o){
+  return Object.keys(o||{}).map(function(code){
+    var n=null;try{if(langNames){n=langNames.of(code);if(n===code)n=null}}catch(e){}
+    return n||o[code];
+  });
+}
+function setStatus(t){$('#status').textContent=t}
+
+function refresh(){
+  var b=$('#upd');b.disabled=true;b.textContent='Aktualisiere …';setStatus('Hole Daten aus mehreren Quellen …');
+  return Promise.allSettled([loadWB('SP.POP.TOTL'),loadWB('NY.GDP.PCAP.CD'),loadWB('NY.GNP.PCAP.CD'),loadWikidata(),loadSec(),loadWB('SP.DYN.TFRT.IN')]).then(function(res){
+    var names=['Weltbank Einwohner','Weltbank BIP','Weltbank Einkommen','Wikidata','Sicherheitslage','Weltbank Geburtenrate'];
+    var src={},errs=[];
+    res.forEach(function(r,i){src[names[i]]=r.status==='fulfilled';if(r.status!=='fulfilled')errs.push(names[i]+': '+(r.reason&&r.reason.message||'Fehler'))});
+    var pop=res[0].value||{},gdp=res[1].value||{},gni=res[2].value||{},wd=res[3].value||{},aa=res[4].status==='fulfilled'?res[4].value:null,tfr=res[5].value||{};
+    var okCount=res.filter(function(r){return r.status==='fulfilled'}).length;
+    if(!okCount){setStatus('Aktualisierung nicht möglich (keine Verbindung zu den Datenquellen). Die bisherigen Daten bleiben erhalten.');return}
+    /* Nur Felder überschreiben, für die neue Werte vorliegen – alles andere bleibt wie zuvor */
+    state.rows=state.rows.map(function(old){
+      var r=Object.assign({},old),w=wd[old.iso3];
+      if(pop[old.iso3])r.pop=pop[old.iso3].v;
+      if(w){if(w.gov)r.gov=w.gov;if(w.hdi!=null)r.hdi=w.hdi;if(w.rel)r.rel=w.rel}
+      if(gdp[old.iso3]){r.gdp=gdp[old.iso3].v;r.gdpY=gdp[old.iso3].y}
+      if(gni[old.iso3]){r.gni=gni[old.iso3].v;r.gniY=gni[old.iso3].y}
+      if(tfr[old.iso3]){r.tfr=tfr[old.iso3].v;r.tfrY=tfr[old.iso3].y}
+      if(aa){var sx=secOf(aa,old);if(sx)r.sec=sx}
+      return r;
+    });
+    state.ts=Date.now();
+    state.src=src;
+    try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:state.ts,rows:state.rows,src:state.src}))}catch(e){}
+    render();
+    if(errs.length)setStatus('Teilweise aktualisiert. Nicht erreichbar (bisherige Werte bleiben): '+errs.join(' · '));
+  }).catch(function(e){setStatus('Fehler: '+e.message)}).then(function(){
+    b.disabled=false;b.textContent='↻ Daten aktualisieren';
+  });
+}
+
+function usd(v){return v==null?'–':'$ '+nf.format(Math.round(v))}
+function num(v){return v==null?'–':nf.format(v)}
+
+/* Lagekarte: schematische Kontinentumrisse (Kartenvorlage #wm im Seitenanfang), roter Punkt = Hauptstadt */
+var VB={'Afrika':[-20,-38,75,75],'Europa':[-25,-72,87,39],'Asien':[25,-55,132,67],'Amerika':[-130,-60,100,120],'Ozeanien':[105,-10,90,58]};
+function mapSvg(r){
+  var v=VB[r.region];if(!v||r.lat==null||r.lon==null)return '';
+  var lon=r.lon;if(r.region==='Ozeanien'&&lon<0)lon+=360;
+  var cx=lon,cy=-r.lat,rad=v[2]*0.02;
+  return '<svg class="map" viewBox="'+v.join(' ')+'" role="img" aria-label="Lage von '+esc(r.name)+'"><use href="#wm"/>'+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+(rad*2.2).toFixed(2)+'" fill="none" stroke="var(--pin)" stroke-width="1.2" vector-effect="non-scaling-stroke" opacity=".55"/>'+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+rad.toFixed(2)+'" fill="var(--pin)"/></svg>';
+}
+
+function render(){
+  var q=$('#q').value.trim().toLowerCase(),rg=$('#reg').value,so=$('#sort').value;
+  var rows=state.rows.filter(function(r){
+    if(rg&&r.region!==rg)return false;
+    if(!q)return true;
+    return (r.name+' '+r.cap+' '+r.langs.join(' ')+' '+(r.sport||'')+' '+(r.sights||'')+' '+(r.food||'')).toLowerCase().indexOf(q)>-1;
+  });
+  rows.sort(function(a,b){
+    if(so==='name')return a.name.localeCompare(b.name,'de');
+    var x=a[so]==null?-1:a[so],y=b[so]==null?-1:b[so];return y-x;
+  });
+  var sel=$('#reg');
+  if(sel.options.length<=1){Object.keys(RG).map(function(k){return RG[k]}).sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent=r;sel.appendChild(o)})}
+  $('#count').textContent=rows.length+' von '+state.rows.length+' Ländern';
+  $('#list').innerHTML=rows.map(function(r){
+    var q1=encodeURIComponent(r.name);
+    return '<details data-i="'+esc(r.iso3)+'"><summary><span class="flag">'+esc(r.flag)+'</span>'+
+      '<span class="nm"><b>'+esc(r.name)+'</b><span>'+esc(r.cap)+' · '+esc(r.region)+'</span></span>'+
+      '<span class="pop">'+(r.pop!=null?num(r.pop)+'<br>Einw.':'')+'</span></summary><div class="det">'+mapSvg(r)+'<div class="mapcap">Lage in '+esc(r.region)+' (roter Punkt = Hauptstadt, schematische Karte)</div><dl>'+
+      '<dt>Hauptstadt</dt><dd>'+esc(r.cap)+'</dd>'+
+      '<dt>Politisches System</dt><dd>'+(esc(r.gov)||'–')+'</dd>'+
+      '<dt>Einwohner</dt><dd>'+num(r.pop)+'</dd>'+
+      '<dt>BIP pro Kopf</dt><dd>'+usd(r.gdp)+(r.gdpY?' <small>('+esc(r.gdpY)+')</small>':'')+'</dd>'+
+      '<dt>Ø Einkommen (BNE/Kopf)</dt><dd>'+usd(r.gni)+(r.gniY?' <small>('+esc(r.gniY)+')</small>':'')+'</dd>'+
+      '<dt>HDI</dt><dd>'+(r.hdi!=null?r.hdi.toFixed(3).replace('.',',')+' <small>('+hdiCat(r.hdi)+')</small>':'–')+'</dd>'+
+      '<dt>Geburtenrate</dt><dd>'+(r.tfr!=null?r.tfr.toFixed(2).replace('.',',').replace(/0$/,'')+' Kinder pro Frau'+(r.tfrY?' <small>('+esc(r.tfrY)+')</small>':''):'–')+'</dd>'+
+      '<dt>Sprachen</dt><dd>'+(esc(r.langs.join(', '))||'–')+'</dd>'+
+      '<dt>Religionen</dt><dd>'+(esc(r.rel)||'<small>keine Angabe – <a target="_blank" rel="noopener" href="https://de.wikipedia.org/wiki/'+q1+'#Religionen">Wikipedia</a></small>')+'</dd>'+
+      '<dt>Sicherheitslage</dt><dd><span class="tag l'+r.sec.l+'">'+esc(r.sec.t)+'</span><br><small><a target="_blank" rel="noopener" href="https://www.auswaertiges-amt.de/de/ReiseUndSicherheit">Auswärtiges Amt: Reise- und Sicherheitshinweise</a></small></dd>'+
+      '<dt>Kultur</dt><dd><span class="wk">'+(esc(r.cul)||'…')+'</span><div><small><a target="_blank" rel="noopener" href="https://de.wikipedia.org/w/index.php?search=Kultur+'+q1+'">Kultur &amp; Gesellschaft nachlesen</a></small></div></dd>'+
+      '<dt>Beliebte Sportarten</dt><dd>'+(esc(r.sport)||'–')+'</dd>'+
+      '<dt>Sehenswürdigkeiten</dt><dd>'+(esc(r.sights)||'–')+'</dd>'+
+      '<dt>Kulinarisches</dt><dd>'+(esc(r.food)||'–')+'</dd>'+
+      '</dl></div></details>';
+  }).join('');
+  if(state.ts){
+    var t=new Date(state.ts).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'});
+    setStatus('Stand der Daten: '+t);
+  }else setStatus('Eingebauter Datenstand (Näherungswerte, nicht live geprüft). Für aktuelle Zahlen „Daten aktualisieren“ tippen.');
+  var s=Object.keys(state.src||{}).map(function(k){return (state.src[k]?'✓ ':'✗ ')+k}).join(' · ');
+  $('#foot').textContent=(s?'Zuletzt erreichte Quellen: '+s+'. ':'')+'Ohne Aktualisierung sind alle Werte gerundete Näherungen (BIP/Einkommen in USD, ca. 2024). Mit „(Schätzung)“ markierte Sicherheitslagen unbedingt beim Auswärtigen Amt gegenprüfen. Nach der Aktualisierung: Einwohner, BIP und Einkommen von der Weltbank (letzter verfügbarer Wert), HDI/Staatsform/Religionen aus Wikidata, Sicherheitslage vom Auswärtigen Amt oder ersatzweise von travel-advisory.info. Geburtenrate ebenfalls von der Weltbank. Sprachen, Sport, Sehenswürdigkeiten, Küche und Kultur-Stichworte sind fest eingebaut; die Lagekarte ist schematisch.';
+}
+
+$('#list').addEventListener('toggle',function(e){
+  var d=e.target;if(!d.open||!d.dataset||!d.dataset.i)return;
+  var r=state.rows.filter(function(x){return x.iso3===d.dataset.i})[0];if(!r)return;
+  var el=d.querySelector('.wk');
+  if(r.cul)return;
+  if(state.wiki[r.iso3]){el.textContent=state.wiki[r.iso3];return}
+  fetch('https://de.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(r.name)).then(function(x){return x.json()}).then(function(s){
+    var t=(s.extract||'').split('. ').slice(0,2).join('. ');
+    state.wiki[r.iso3]=t||'Kein Kurzporträt gefunden.';el.textContent=state.wiki[r.iso3];
+  }).catch(function(){el.textContent='Kurzporträt derzeit nicht ladbar.'});
+},true);
+
+['q','reg','sort'].forEach(function(id){$('#'+id).addEventListener('input',render)});
+$('#upd').addEventListener('click',refresh);
+
+var cached=null;
+try{cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null')}catch(e){}
+if(cached&&cached.rows&&cached.rows.length){state.rows=cached.rows;state.ts=cached.ts;state.src=cached.src||{};render()}
+else{render();refresh()}
+})();
+</script>
+</body>
+</html>
