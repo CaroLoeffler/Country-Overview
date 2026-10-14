@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Länder">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0f766e">
+<title>Länder-Atlas</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--line:#e4e7ec;--acc:#0f766e;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--info:#a16207}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--tx:#eceff4;--mut:#98a2b3;--line:#262c36;--acc:#2dd4bf;--ok:#4ade80;--warn:#fb923c;--bad:#f87171;--info:#facc15}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;border-bottom:1px solid var(--line)}
+h1{font-size:20px;margin:0 0 8px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input,select,button{font:inherit;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:9px 10px}
+input[type=search]{flex:1 1 100%}
+select{flex:1 1 40%}
+button.upd{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600;flex:1 1 100%}
+@media (prefers-color-scheme:dark){button.upd{color:#04201c}}
+button[disabled]{opacity:.6}
+#status{font-size:12px;color:var(--mut);margin-top:6px}
+main{padding:12px 14px calc(env(safe-area-inset-bottom) + 24px);max-width:900px;margin:0 auto}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}
+summary{list-style:none;display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+.flag{font-size:28px;line-height:1}
+.nm{flex:1;min-width:0}
+.nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm span{font-size:13px;color:var(--mut)}
+.pop{font-size:13px;color:var(--mut);text-align:right;white-space:nowrap}
+.det{padding:0 12px 12px;border-top:1px solid var(--line)}
+dl{margin:10px 0 0;display:grid;grid-template-columns:120px 1fr;gap:6px 10px;font-size:14px}
+dt{color:var(--mut)}dd{margin:0}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.l0{color:var(--ok)}.l1{color:var(--info)}.l2{color:var(--warn)}.l3{color:var(--bad)}.ln{color:var(--mut)}
+a{color:var(--acc)}
+footer{font-size:12px;color:var(--mut);padding:8px 2px}
+#count{font-size:13px;color:var(--mut);margin:0 2px 8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌍 Länder-Atlas</h1>
+  <div class="row">
+    <input id="q" type="search" placeholder="Land, Hauptstadt oder Sprache suchen …" autocomplete="off">
+    <select id="reg"><option value="">Alle Regionen</option></select>
+    <select id="sort">
+      <option value="name">Sortierung: Name</option>
+      <option value="pop">Einwohner</option>
+      <option value="gdp">BIP pro Kopf</option>
+      <option value="gni">Einkommen pro Kopf</option>
+      <option value="hdi">HDI</option>
+    </select>
+    <button class="upd" id="upd">↻ Daten aktualisieren</button>
+  </div>
+  <div id="status">Lade …</div>
+</header>
+<main>
+  <div id="count"></div>
+  <div id="list"></div>
+  <footer id="foot"></footer>
+</main>
+
+<script>
+(function(){
+'use strict';
+var CACHE_KEY='laender-atlas-v3';
+var $=function(s){return document.querySelector(s)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]})};
+var RG={AF:'Afrika',AM:'Amerika',AS:'Asien',EU:'Europa',OC:'Ozeanien'};
+var nf=new Intl.NumberFormat('de-DE');
+
+/* Feste Basisliste: ISO3|ISO2|Name|Hauptstadt|Region – damit die Länder immer sichtbar sind */
+var BASE=(
+'DZA|DZ|Algerien|Algier|AF;AGO|AO|Angola|Luanda|AF;BEN|BJ|Benin|Porto-Novo|AF;BWA|BW|Botswana|Gaborone|AF;BFA|BF|Burkina Faso|Ouagadougou|AF;BDI|BI|Burundi|Gitega|AF;CPV|CV|Kap Verde|Praia|AF;CMR|CM|Kamerun|Jaunde|AF;CAF|CF|Zentralafrikanische Republik|Bangui|AF;TCD|TD|Tschad|N\'Djamena|AF;COM|KM|Komoren|Moroni|AF;COG|CG|Republik Kongo|Brazzaville|AF;COD|CD|DR Kongo|Kinshasa|AF;CIV|CI|Elfenbeinküste|Yamoussoukro|AF;DJI|DJ|Dschibuti|Dschibuti|AF;EGY|EG|Ägypten|Kairo|AF;GNQ|GQ|Äquatorialguinea|Malabo|AF;ERI|ER|Eritrea|Asmara|AF;SWZ|SZ|Eswatini|Mbabane|AF;ETH|ET|Äthiopien|Addis Abeba|AF;GAB|GA|Gabun|Libreville|AF;GMB|GM|Gambia|Banjul|AF;GHA|GH|Ghana|Accra|AF;GIN|GN|Guinea|Conakry|AF;GNB|GW|Guinea-Bissau|Bissau|AF;KEN|KE|Kenia|Nairobi|AF;LSO|LS|Lesotho|Maseru|AF;LBR|LR|Liberia|Monrovia|AF;LBY|LY|Libyen|Tripolis|AF;MDG|MG|Madagaskar|Antananarivo|AF;MWI|MW|Malawi|Lilongwe|AF;MLI|ML|Mali|Bamako|AF;MRT|MR|Mauretanien|Nouakchott|AF;MUS|MU|Mauritius|Port Louis|AF;MAR|MA|Marokko|Rabat|AF;MOZ|MZ|Mosambik|Maputo|AF;NAM|NA|Namibia|Windhuk|AF;NER|NE|Niger|Niamey|AF;NGA|NG|Nigeria|Abuja|AF;RWA|RW|Ruanda|Kigali|AF;STP|ST|São Tomé und Príncipe|São Tomé|AF;SEN|SN|Senegal|Dakar|AF;SYC|SC|Seychellen|Victoria|AF;SLE|SL|Sierra Leone|Freetown|AF;SOM|SO|Somalia|Mogadischu|AF;ZAF|ZA|Südafrika|Pretoria|AF;SSD|SS|Südsudan|Juba|AF;SDN|SD|Sudan|Khartum|AF;TZA|TZ|Tansania|Dodoma|AF;TGO|TG|Togo|Lomé|AF;TUN|TN|Tunesien|Tunis|AF;UGA|UG|Uganda|Kampala|AF;ZMB|ZM|Sambia|Lusaka|AF;ZWE|ZW|Simbabwe|Harare|AF;'+
+'ATG|AG|Antigua und Barbuda|Saint John\'s|AM;ARG|AR|Argentinien|Buenos Aires|AM;BHS|BS|Bahamas|Nassau|AM;BRB|BB|Barbados|Bridgetown|AM;BLZ|BZ|Belize|Belmopan|AM;BOL|BO|Bolivien|Sucre|AM;BRA|BR|Brasilien|Brasília|AM;CAN|CA|Kanada|Ottawa|AM;CHL|CL|Chile|Santiago de Chile|AM;COL|CO|Kolumbien|Bogotá|AM;CRI|CR|Costa Rica|San José|AM;CUB|CU|Kuba|Havanna|AM;DMA|DM|Dominica|Roseau|AM;DOM|DO|Dominikanische Republik|Santo Domingo|AM;ECU|EC|Ecuador|Quito|AM;SLV|SV|El Salvador|San Salvador|AM;GRD|GD|Grenada|Saint George\'s|AM;GTM|GT|Guatemala|Guatemala-Stadt|AM;GUY|GY|Guyana|Georgetown|AM;HTI|HT|Haiti|Port-au-Prince|AM;HND|HN|Honduras|Tegucigalpa|AM;JAM|JM|Jamaika|Kingston|AM;MEX|MX|Mexiko|Mexiko-Stadt|AM;NIC|NI|Nicaragua|Managua|AM;PAN|PA|Panama|Panama-Stadt|AM;PRY|PY|Paraguay|Asunción|AM;PER|PE|Peru|Lima|AM;KNA|KN|St. Kitts und Nevis|Basseterre|AM;LCA|LC|St. Lucia|Castries|AM;VCT|VC|St. Vincent und die Grenadinen|Kingstown|AM;SUR|SR|Suriname|Paramaribo|AM;TTO|TT|Trinidad und Tobago|Port of Spain|AM;USA|US|Vereinigte Staaten|Washington, D.C.|AM;URY|UY|Uruguay|Montevideo|AM;VEN|VE|Venezuela|Caracas|AM;'+
+'AFG|AF|Afghanistan|Kabul|AS;ARM|AM|Armenien|Eriwan|AS;AZE|AZ|Aserbaidschan|Baku|AS;BHR|BH|Bahrain|Manama|AS;BGD|BD|Bangladesch|Dhaka|AS;BTN|BT|Bhutan|Thimphu|AS;BRN|BN|Brunei|Bandar Seri Begawan|AS;KHM|KH|Kambodscha|Phnom Penh|AS;CHN|CN|China|Peking|AS;GEO|GE|Georgien|Tiflis|AS;IND|IN|Indien|Neu-Delhi|AS;IDN|ID|Indonesien|Jakarta|AS;IRN|IR|Iran|Teheran|AS;IRQ|IQ|Irak|Bagdad|AS;ISR|IL|Israel|Jerusalem|AS;JPN|JP|Japan|Tokio|AS;JOR|JO|Jordanien|Amman|AS;KAZ|KZ|Kasachstan|Astana|AS;KWT|KW|Kuwait|Kuwait-Stadt|AS;KGZ|KG|Kirgisistan|Bischkek|AS;LAO|LA|Laos|Vientiane|AS;LBN|LB|Libanon|Beirut|AS;MYS|MY|Malaysia|Kuala Lumpur|AS;MDV|MV|Malediven|Malé|AS;MNG|MN|Mongolei|Ulan-Bator|AS;MMR|MM|Myanmar|Naypyidaw|AS;NPL|NP|Nepal|Kathmandu|AS;PRK|KP|Nordkorea|Pjöngjang|AS;OMN|OM|Oman|Maskat|AS;PAK|PK|Pakistan|Islamabad|AS;PHL|PH|Philippinen|Manila|AS;QAT|QA|Katar|Doha|AS;SAU|SA|Saudi-Arabien|Riad|AS;SGP|SG|Singapur|Singapur|AS;KOR|KR|Südkorea|Seoul|AS;LKA|LK|Sri Lanka|Sri Jayawardenepura Kotte|AS;SYR|SY|Syrien|Damaskus|AS;TJK|TJ|Tadschikistan|Duschanbe|AS;THA|TH|Thailand|Bangkok|AS;TLS|TL|Osttimor|Dili|AS;TUR|TR|Türkei|Ankara|AS;TKM|TM|Turkmenistan|Aschgabat|AS;ARE|AE|Vereinigte Arabische Emirate|Abu Dhabi|AS;UZB|UZ|Usbekistan|Taschkent|AS;VNM|VN|Vietnam|Hanoi|AS;YEM|YE|Jemen|Sanaa|AS;PSE|PS|Palästina|Ramallah|AS;'+
+'ALB|AL|Albanien|Tirana|EU;AND|AD|Andorra|Andorra la Vella|EU;AUT|AT|Österreich|Wien|EU;BLR|BY|Belarus|Minsk|EU;BEL|BE|Belgien|Brüssel|EU;BIH|BA|Bosnien und Herzegowina|Sarajevo|EU;BGR|BG|Bulgarien|Sofia|EU;HRV|HR|Kroatien|Zagreb|EU;CYP|CY|Zypern|Nikosia|EU;CZE|CZ|Tschechien|Prag|EU;DNK|DK|Dänemark|Kopenhagen|EU;EST|EE|Estland|Tallinn|EU;FIN|FI|Finnland|Helsinki|EU;FRA|FR|Frankreich|Paris|EU;DEU|DE|Deutschland|Berlin|EU;GRC|GR|Griechenland|Athen|EU;HUN|HU|Ungarn|Budapest|EU;ISL|IS|Island|Reykjavík|EU;IRL|IE|Irland|Dublin|EU;ITA|IT|Italien|Rom|EU;LVA|LV|Lettland|Riga|EU;LIE|LI|Liechtenstein|Vaduz|EU;LTU|LT|Litauen|Vilnius|EU;LUX|LU|Luxemburg|Luxemburg|EU;MLT|MT|Malta|Valletta|EU;MDA|MD|Moldau|Chișinău|EU;MCO|MC|Monaco|Monaco|EU;MNE|ME|Montenegro|Podgorica|EU;NLD|NL|Niederlande|Amsterdam|EU;MKD|MK|Nordmazedonien|Skopje|EU;NOR|NO|Norwegen|Oslo|EU;POL|PL|Polen|Warschau|EU;PRT|PT|Portugal|Lissabon|EU;ROU|RO|Rumänien|Bukarest|EU;RUS|RU|Russland|Moskau|EU;SMR|SM|San Marino|San Marino|EU;SRB|RS|Serbien|Belgrad|EU;SVK|SK|Slowakei|Bratislava|EU;SVN|SI|Slowenien|Ljubljana|EU;ESP|ES|Spanien|Madrid|EU;SWE|SE|Schweden|Stockholm|EU;CHE|CH|Schweiz|Bern|EU;UKR|UA|Ukraine|Kiew|EU;GBR|GB|Vereinigtes Königreich|London|EU;VAT|VA|Vatikanstadt|Vatikanstadt|EU;'+
+'AUS|AU|Australien|Canberra|OC;FJI|FJ|Fidschi|Suva|OC;KIR|KI|Kiribati|Tarawa|OC;MHL|MH|Marshallinseln|Majuro|OC;FSM|FM|Mikronesien|Palikir|OC;NRU|NR|Nauru|Yaren|OC;NZL|NZ|Neuseeland|Wellington|OC;PLW|PW|Palau|Ngerulmud|OC;PNG|PG|Papua-Neuguinea|Port Moresby|OC;WSM|WS|Samoa|Apia|OC;SLB|SB|Salomonen|Honiara|OC;TON|TO|Tonga|Nukuʻalofa|OC;TUV|TV|Tuvalu|Funafuti|OC;VUT|VU|Vanuatu|Port Vila|OC'
+).split(';').map(function(l){
+  var p=l.split('|');
+  var fl='';try{fl=String.fromCodePoint.apply(null,p[1].split('').map(function(c){return 127397+c.charCodeAt(0)}))}catch(e){}
+  return {iso3:p[0],iso2:p[1],name:p[2],cap:p[3],region:RG[p[4]],flag:fl,
+    pop:null,langs:[],gdp:null,gdpY:'',gni:null,gniY:'',hdi:null,gov:'',rel:'',sec:{l:'n',t:'Noch nicht geladen – „Daten aktualisieren“ tippen'}};
+});
+
+/* Eingebauter Datenstand (Näherungswerte nach bestem Wissen, nicht live geprüft).
+   Felder: ISO3|Einwohner Mio.|BIP/Kopf USD|BNE/Kopf USD|HDI|Sprachen|Staatsform|Religionen|Sicherheit 0-3|Kultur */
+var SNAP=`DZA|46.8|5300|4800|0.763|Arabisch, Tamazight, Französisch|Präsidialrepublik|Islam (sunnitisch)|2|Arabisch-berberisches Erbe, Couscous, Raï-Musik
+AGO|37.9|2100|1900|0.591|Portugiesisch, Umbundu, Kimbundu|Präsidialrepublik|Christentum|0|Kizomba, Semba, portugiesisch-bantu geprägt
+BEN|14.5|1400|1400|0.504|Französisch, Fon, Yoruba|Präsidialrepublik|Christentum, Islam, Vodun|2|Wiege des Vodun, Königspaläste von Abomey
+BWA|2.6|7000|7300|0.731|Setswana, Englisch|Parlamentarische Republik|Christentum|0|Botho-Ethik, Kgotla-Dorfversammlung, Okavango
+BFA|23.5|900|900|0.459|Französisch, Mooré, Dioula|Übergangsregierung (Militär)|Islam, Christentum|3|Filmfestival FESPACO, Masken- und Trommelkunst
+BDI|13.7|200|230|0.439|Kirundi, Französisch, Swahili|Präsidialrepublik|Christentum|2|Königliche Trommler, Kaffeeanbau
+CPV|0.52|4500|4600|0.668|Portugiesisch, Kapverdisches Kreol|Parlamentarische Republik|Christentum|0|Morna, Cesária Évora, Inselkultur
+CMR|29.1|1700|1600|0.533|Französisch, Englisch|Präsidialrepublik|Christentum, Islam|2|„Afrika im Kleinen“, Makossa, Fußballkultur
+CAF|5.3|500|500|0.414|Sango, Französisch|Präsidialrepublik|Christentum, Islam|3|Baka-Gesang, Regenwaldkulturen
+TCD|20.3|800|700|0.416|Französisch, Arabisch|Präsidialrepublik|Islam, Christentum|3|Sahel-Nomadenkultur, Tschadsee
+COM|0.9|1500|1600|0.603|Komorisch, Arabisch, Französisch|Präsidialrepublik|Islam (sunnitisch)|0|Swahili-arabische Inselkultur, Ylang-Ylang
+COG|6.3|2500|2200|0.649|Französisch, Lingala, Kituba|Präsidialrepublik|Christentum|1|Kongolesische Rumba, Sapeurs
+COD|109|700|620|0.481|Französisch, Lingala, Swahili, Kikongo|Semipräsidentielle Republik|Christentum|3|Rumba, Soukous, Masken des Regenwalds
+CIV|31.9|2700|2500|0.534|Französisch, Dioula|Präsidialrepublik|Islam, Christentum|1|Zouglou, Coupé-Décalé, Kakaoland
+DJI|1.15|3600|3500|0.513|Französisch, Arabisch, Somali, Afar|Präsidialrepublik|Islam (sunnitisch)|1|Afar- und Somali-Traditionen, Hafenlage
+EGY|116|3300|3800|0.754|Arabisch|Präsidialrepublik|Islam (sunnitisch), Christentum (Kopten)|1|Pharaonenerbe, Kairoer Film und Musik
+GNQ|1.8|6500|5800|0.674|Spanisch, Französisch, Portugiesisch|Präsidialrepublik|Christentum|0|Bantu- und spanisch-koloniale Prägung
+ERI|3.5|700|640|0.493|Tigrinya, Arabisch, Englisch|Einparteienstaat|Christentum, Islam|2|Asmaras Art-déco, Kaffeezeremonie
+SWZ|1.2|3900|3800|0.610|Siswati, Englisch|Absolute Monarchie|Christentum|0|Umhlanga-Schilftanz, Königskultur
+ETH|130|1000|1000|0.497|Amharisch, Oromo, Tigrinya|Parlamentarische Bundesrepublik|Christentum (orthodox), Islam|2|Eigene Schrift und Zeitrechnung, Kaffee-Ursprung
+GAB|2.5|8000|7500|0.733|Französisch, Fang|Präsidialrepublik|Christentum|0|Fang-Masken, Regenwald und Nationalparks
+GMB|2.8|900|900|0.524|Englisch, Mandinka, Wolof|Präsidialrepublik|Islam|0|Griot-Tradition, Kora-Musik
+GHA|34.4|2200|2300|0.602|Englisch, Twi, Ewe|Präsidialrepublik|Christentum, Islam|0|Kente-Weberei, Highlife, Adinkra-Symbole
+GIN|14.8|1700|1500|0.471|Französisch, Susu, Pular|Übergangsregierung (Militär)|Islam|2|Djembé-Trommeln, Ballets africains
+GNB|2.2|900|850|0.483|Portugiesisch, Kreol|Semipräsidentielle Republik|Islam, Christentum, Naturreligionen|2|Bijagós-Inseln, Gumbe-Musik
+KEN|56.4|2200|2200|0.628|Swahili, Englisch|Präsidialrepublik|Christentum|2|Massai, Safari, Laufnation
+LSO|2.3|900|1000|0.521|Sesotho, Englisch|Konstitutionelle Monarchie|Christentum|0|Basotho-Decken, Reiterkultur im Hochland
+LBR|5.6|800|700|0.487|Englisch|Präsidialrepublik|Christentum, Islam|1|Von freigelassenen Amerikanern gegründet
+LBY|7.4|7000|6500|0.746|Arabisch|Übergangsregierung (geteilt)|Islam (sunnitisch)|3|Berber, Antike Stätten wie Leptis Magna
+MDG|31.9|500|520|0.487|Malagasy, Französisch|Präsidialrepublik|Christentum, Naturreligionen|2|Austronesisch-afrikanisch, Lemuren, Ahnenkult
+MWI|21.7|500|600|0.517|Englisch, Chichewa|Präsidialrepublik|Christentum, Islam|0|Gule Wamkulu, Malawisee
+MLI|24.5|1000|900|0.419|Französisch, Bambara|Übergangsregierung (Militär)|Islam|3|Timbuktu, Griots, Blues-Wurzeln
+MRT|5.2|2000|2100|0.548|Arabisch, Französisch|Präsidialrepublik|Islam|2|Nomadentum, Wüstenstädte, Dichtkunst
+MUS|1.26|11000|11500|0.806|Englisch, Französisch, Kreol|Parlamentarische Republik|Hinduismus, Christentum, Islam|0|Vielvölkerinsel, Sega-Tanz
+MAR|38.1|3900|3800|0.710|Arabisch, Tamazight, Französisch|Konstitutionelle Monarchie|Islam (sunnitisch)|1|Medinas, Tajine, Gnawa-Musik
+MOZ|34.6|600|600|0.493|Portugiesisch, Makua, Swahili|Präsidialrepublik|Christentum, Islam|2|Marrabenta, Marimba-Musik
+NAM|3.1|4000|4600|0.615|Englisch, Afrikaans, Oshiwambo|Präsidialrepublik|Christentum|0|Himba, Wüsten und Weite
+NER|27.2|600|600|0.394|Französisch, Hausa, Zarma|Übergangsregierung (Militär)|Islam|3|Tuareg-Kultur, Agadez
+NGA|232|800|1000|0.560|Englisch, Hausa, Yoruba, Igbo|Präsidiale Bundesrepublik|Islam, Christentum|2|Nollywood, Afrobeats, Vielvölkerstaat
+RWA|14.3|1000|960|0.571|Kinyarwanda, Französisch, Englisch|Präsidialrepublik|Christentum|1|Intore-Tanz, Berggorillas
+STP|0.24|2800|2600|0.625|Portugiesisch|Semipräsidentielle Republik|Christentum|0|Kakaoinseln, Tchiloli-Theater
+SEN|18.5|1700|1700|0.496|Französisch, Wolof|Präsidialrepublik|Islam (Sufi-Bruderschaften)|1|Teranga (Gastfreundschaft), Mbalax, Ringkampf
+SYC|0.13|18000|17500|0.848|Seychellenkreol, Englisch, Französisch|Präsidialrepublik|Christentum|0|Kreolische Küche, Inselnatur
+SLE|8.6|800|780|0.467|Englisch, Krio|Präsidialrepublik|Islam, Christentum|1|Krio-Kultur, Freetowns Gründungsgeschichte
+SOM|19|600|550|0.404|Somali, Arabisch|Bundesrepublik im Übergang|Islam (sunnitisch)|3|Dichterkultur, Nomadentradition
+ZAF|64|6100|6300|0.741|Zulu, Xhosa, Afrikaans, Englisch u. a. (11 Amtssprachen)|Parlamentarische Republik|Christentum|1|Regenbogennation, Braai, Ubuntu
+SSD|12.4|400|300|0.388|Englisch, Arabisch, Dinka|Präsidialrepublik (Übergang)|Christentum, Naturreligionen|3|Nilotische Viehzüchter (Dinka, Nuer)
+SDN|50.4|700|600|0.511|Arabisch, Englisch|Militärregierung (Bürgerkrieg)|Islam|3|Nubien, Pyramiden von Meroe
+TZA|68.6|1200|1200|0.555|Swahili, Englisch|Präsidialrepublik|Christentum, Islam|1|Kilimandscharo, Sansibar, Swahili-Kultur
+TGO|9.5|1000|1000|0.571|Französisch, Ewe, Kabiyé|Präsidialrepublik|Christentum, Naturreligionen, Islam|1|Batammariba-Lehmhäuser, Vodun
+TUN|12.2|4300|4200|0.776|Arabisch, Französisch|Präsidialrepublik|Islam (sunnitisch)|1|Medina, Karthago, Harissa
+UGA|50|1100|1000|0.550|Englisch, Swahili, Luganda|Präsidialrepublik|Christentum, Islam|1|Königreich Buganda, Gorillas, Matoke
+ZMB|21.3|1300|1200|0.595|Englisch, Bemba|Präsidialrepublik|Christentum|0|Viktoriafälle, Kuomboka-Fest
+ZWE|16.6|2000|1900|0.627|Englisch, Shona, Ndebele|Präsidialrepublik|Christentum|1|Steinskulpturen, Great Zimbabwe
+ATG|0.1|20000|18000|0.826|Englisch|Konstitutionelle Monarchie|Christentum|0|Karibik, Steelband, Cricket
+ARG|46|13000|13000|0.865|Spanisch|Präsidiale Bundesrepublik|Christentum (katholisch)|0|Tango, Asado, Fußballkultur
+BHS|0.4|35000|31000|0.820|Englisch|Konstitutionelle Monarchie|Christentum|0|Junkanoo, Inselleben
+BRB|0.28|21000|19500|0.809|Englisch|Konstitutionelle Monarchie|Christentum|0|Cricket, Rum, Crop-Over-Fest
+BLZ|0.42|7000|6500|0.714|Englisch, Spanisch, Kreol|Konstitutionelle Monarchie|Christentum|1|Maya-Stätten, Karibik-Kreol
+BOL|12.4|3700|3600|0.698|Spanisch, Quechua, Aymara|Präsidialrepublik|Christentum (katholisch)|1|Andenkultur, Karneval von Oruro
+BRA|212|10300|9900|0.786|Portugiesisch|Präsidiale Bundesrepublik|Christentum|1|Samba, Karneval, Fußball
+CAN|40.1|53000|52000|0.939|Englisch, Französisch|Parlamentarische Bundesmonarchie|Christentum, Konfessionslos|0|Multikulturalismus, First Nations, Eishockey
+CHL|19.8|17000|16000|0.878|Spanisch|Präsidialrepublik|Christentum (katholisch)|0|Dichter wie Neruda, Wein, Anden
+COL|52.9|7000|6500|0.788|Spanisch|Präsidialrepublik|Christentum (katholisch)|2|Cumbia, Kaffee, Magischer Realismus
+CRI|5.2|18000|16500|0.806|Spanisch|Präsidialrepublik|Christentum (katholisch)|0|„Pura Vida“, Naturschutz
+CUB|11|8000|7500|0.762|Spanisch|Einparteienstaat|Christentum, Santería|1|Salsa, Son, Oldtimer
+DMA|0.07|9000|8500|0.740|Englisch, Kreol|Parlamentarische Republik|Christentum|0|Karibische Naturinsel
+DOM|11.5|11500|10800|0.766|Spanisch|Präsidialrepublik|Christentum|1|Merengue, Bachata, Baseball
+ECU|18.1|6500|6200|0.777|Spanisch, Quechua|Präsidialrepublik|Christentum (katholisch)|2|Andenindigene, Galápagos
+SLV|6.3|5800|5400|0.678|Spanisch|Präsidialrepublik|Christentum|1|Pupusas, Maya-Erbe
+GRD|0.12|11500|10500|0.795|Englisch|Konstitutionelle Monarchie|Christentum|0|Gewürzinsel, Karneval
+GTM|18.4|6000|5900|0.629|Spanisch, Maya-Sprachen|Präsidialrepublik|Christentum|2|Maya-Erbe, Textilkunst
+GUY|0.83|24000|16000|0.742|Englisch, Kreolisch|Parlamentarische Republik|Christentum, Hinduismus, Islam|1|Indisch-afrikanisch-karibische Mischung
+HTI|11.9|1700|1600|0.552|Haitianisches Kreol, Französisch|Übergangsrat|Christentum, Vodou|3|Vodou, naive Malerei, Kompa
+HND|10.7|3500|3400|0.645|Spanisch|Präsidialrepublik|Christentum|2|Maya-Ruinen von Copán
+JAM|2.8|6800|6000|0.720|Englisch, Patois|Parlamentarische Monarchie|Christentum, Rastafari|1|Reggae, Ska, Sprintkultur
+MEX|130.8|13800|11000|0.781|Spanisch, indigene Sprachen|Präsidiale Bundesrepublik|Christentum (katholisch)|2|Día de los Muertos, Mariachi, UNESCO-Küche
+NIC|7|2700|2500|0.706|Spanisch|Präsidialrepublik|Christentum|1|Dichtertradition (Rubén Darío), koloniale Städte
+PAN|4.5|18000|16500|0.839|Spanisch|Präsidialrepublik|Christentum|1|Kanalland, Pollera-Tracht
+PRY|6.9|6500|6300|0.731|Spanisch, Guaraní|Präsidialrepublik|Christentum (katholisch)|0|Zweisprachig, Tereré, Harfenmusik
+PER|34.4|8000|7500|0.794|Spanisch, Quechua, Aymara|Präsidialrepublik|Christentum (katholisch)|1|Inka-Erbe, Machu Picchu, Ceviche
+KNA|0.05|25000|21000|0.840|Englisch|Konstitutionelle Monarchie|Christentum|0|Zucker-Erbe, Karibik
+LCA|0.18|12000|11000|0.756|Englisch, Kreol|Konstitutionelle Monarchie|Christentum|0|Pitons, Inselkultur
+VCT|0.1|10000|9500|0.772|Englisch|Konstitutionelle Monarchie|Christentum|0|Karibische Inselkultur
+SUR|0.63|6500|6000|0.690|Niederländisch, Sranan Tongo|Präsidialrepublik|Christentum, Hinduismus, Islam|0|Javanisch-indische Einflüsse, Vielfalt
+TTO|1.5|18000|17500|0.814|Englisch|Parlamentarische Republik|Christentum, Hinduismus, Islam|1|Karneval, Calypso, Steelpan
+USA|345|85000|85000|0.938|Englisch, Spanisch|Präsidiale Bundesrepublik|Christentum|1|Popkultur, Einwanderergesellschaft
+URY|3.4|22000|20500|0.830|Spanisch|Präsidialrepublik|Christentum, Konfessionslos|0|Candombe, Mate, Fußball
+VEN|28.4|4000|3500|0.709|Spanisch|Präsidialrepublik (im Umbruch)|Christentum|3|Joropo, Arepas, Angel Falls
+AFG|42.6|400|380|0.496|Paschtu, Dari|Islamisches Emirat (Taliban)|Islam (sunnitisch)|3|Paschtunwali, Teppiche, Poesie
+ARM|3|8500|8800|0.786|Armenisch|Parlamentarische Republik|Christentum (Armenisch-Apostolisch)|1|Erstes christliches Staatsvolk, Duduk
+AZE|10.2|7500|6900|0.789|Aserbaidschanisch|Präsidialrepublik|Islam (schiitisch)|1|Mugham-Musik, Teppiche
+BHR|1.6|30000|28000|0.899|Arabisch|Konstitutionelle Monarchie|Islam|1|Perlentauchen, Dilmun-Erbe
+BGD|173|2600|2800|0.685|Bengalisch|Parlamentarische Republik|Islam, Hinduismus|2|Bengalische Poesie, Rikscha-Kunst
+BTN|0.79|3800|3700|0.698|Dzongkha|Konstitutionelle Monarchie|Buddhismus|0|Glück als Staatsziel, Klöster
+BRN|0.45|33000|32000|0.837|Malaiisch|Absolute Monarchie|Islam|0|Malaiische Sultanatskultur
+KHM|17.6|2100|1900|0.606|Khmer|Konstitutionelle Monarchie|Buddhismus|1|Angkor Wat, Apsara-Tanz
+CHN|1412|13300|13400|0.797|Mandarin, regionale Sprachen|Einparteienstaat (Volksrepublik)|Konfessionslos, Buddhismus, Daoismus|1|Schrifttradition, Tee, Kalligrafie
+GEO|3.7|8000|7600|0.844|Georgisch|Parlamentarische Republik|Christentum (orthodox)|1|Wein-Ursprungsland, mehrstimmiger Gesang
+IND|1450|2700|2600|0.685|Hindi, Englisch, 22 Amtssprachen|Parlamentarische Bundesrepublik|Hinduismus, Islam|1|Bollywood, Yoga, Vielfalt der Feste
+IDN|283|4900|4800|0.728|Indonesisch, Javanisch|Präsidialrepublik|Islam|1|Batik, Gamelan, Inselvielfalt
+IRN|91.6|4200|4100|0.780|Persisch, Aserbaidschanisch|Islamische Republik (theokratisch)|Islam (schiitisch)|3|Persische Poesie, Teppiche, Nowruz
+IRQ|46|5800|5500|0.695|Arabisch, Kurdisch|Parlamentarische Republik|Islam|3|Mesopotamien, Bagdader Geistesgeschichte
+ISR|10|55000|53000|0.915|Hebräisch, Arabisch|Parlamentarische Republik|Judentum, Islam|3|Start-up-Nation, Kibbuz, Feiertage
+JPN|123.5|32500|38500|0.925|Japanisch|Konstitutionelle Monarchie|Shinto, Buddhismus|0|Anime, Teezeremonie, Höflichkeitskultur
+JOR|11.6|4600|4500|0.749|Arabisch|Konstitutionelle Monarchie|Islam (sunnitisch)|1|Beduinengastfreundschaft, Petra
+KAZ|20.6|13000|11600|0.837|Kasachisch, Russisch|Präsidialrepublik|Islam, Christentum|0|Nomadentradition, Jurten, Dombra
+KWT|4.9|33000|36000|0.852|Arabisch|Konstitutionelle Monarchie (Emirat)|Islam|1|Diwaniya-Kultur, Perlenhandel
+KGZ|7.2|1900|1700|0.701|Kirgisisch, Russisch|Präsidialrepublik|Islam (sunnitisch)|0|Jurten, Manas-Epos, Reiterspiele
+LAO|7.7|2000|2100|0.620|Laotisch|Einparteienstaat|Buddhismus|1|Luang Prabang, Klosterleben
+LBN|5.8|3500|3300|0.752|Arabisch, Französisch|Parlamentarische Republik (konfessionell)|Islam, Christentum|3|Phönizisches Erbe, Meze
+MYS|35.1|11500|11400|0.819|Malaiisch, Englisch|Wahlmonarchie (Bundesstaat)|Islam|0|Vielvölkerküche, Batik
+MDV|0.53|14000|13000|0.766|Dhivehi|Präsidialrepublik|Islam (sunnitisch)|1|Inselkultur, Boduberu-Trommeln
+MNG|3.5|5500|5000|0.747|Mongolisch|Parlamentarische Republik|Buddhismus, Schamanismus|0|Nomaden, Naadam-Fest
+MMR|54.5|1200|1200|0.609|Birmanisch|Militärregierung|Buddhismus|3|Pagoden, Thanaka, Wasserfest
+NPL|29.7|1400|1400|0.622|Nepali|Parlamentarische Bundesrepublik|Hinduismus, Buddhismus|1|Himalaya, Sherpa, Tempel von Kathmandu
+PRK|26.6||||Koreanisch|Einparteienstaat (Diktatur)|Konfessionslos|3|Juche-Ideologie, Massenspiele
+OMN|5.3|20000|19500|0.819|Arabisch|Absolute Monarchie|Islam (ibaditisch)|0|Weihrauch, Dhau-Schiffe
+PAK|251|1400|1500|0.544|Urdu, Englisch, Punjabi|Parlamentarische Bundesrepublik|Islam|2|Sufi-Musik, Qawwali, Truck-Art
+PHL|115|3900|4000|0.720|Filipino, Englisch|Präsidialrepublik|Christentum (katholisch), Islam|2|Fiesta-Kultur, Familienbande
+QAT|3.1|70000|63000|0.886|Arabisch|Absolute Monarchie|Islam|0|Falknerei, Beduinentradition
+SAU|35.3|33000|32000|0.900|Arabisch|Absolute Monarchie|Islam (sunnitisch)|1|Mekka und Medina, Beduinenwurzeln
+SGP|5.9|88000|67000|0.946|Englisch, Mandarin, Malaiisch, Tamil|Parlamentarische Republik|Buddhismus, Christentum, Islam|0|Hawker-Küche, Multikulturalität
+KOR|51.7|36000|36000|0.937|Koreanisch|Präsidialrepublik|Konfessionslos, Christentum, Buddhismus|0|K-Pop, Kimchi, Hanbok
+LKA|22|4100|4000|0.776|Singhalesisch, Tamilisch|Präsidialrepublik|Buddhismus, Hinduismus|1|Tee, Ayurveda, buddhistische Tempel
+SYR|24.7|900|800|0.514|Arabisch|Übergangsregierung|Islam|3|Damaskus als alte Stadt, Levante-Küche
+TJK|10.6|1300|1300|0.691|Tadschikisch|Präsidialrepublik|Islam|1|Persisch geprägt, Pamir-Gebirge
+THA|66|7300|7100|0.798|Thai|Konstitutionelle Monarchie|Buddhismus|1|Tempel, Muay Thai, Songkran
+TLS|1.4|1500|2200|0.647|Tetum, Portugiesisch|Semipräsidentielle Republik|Christentum (katholisch)|0|Tais-Webkunst, junges Land
+TUR|87.5|15000|12900|0.853|Türkisch|Präsidialrepublik|Islam (sunnitisch)|1|Teehaus, Basar, Hammam
+TKM|7.5|8500|8500|0.764|Turkmenisch, Russisch|Präsidialrepublik (autoritär)|Islam|1|Achal-Tekkiner-Pferde, Teppiche
+ARE|11.3|50000|45000|0.940|Arabisch|Bundesmonarchie|Islam|0|Beduinenerbe, Wolkenkratzer
+UZB|36.4|2600|2500|0.740|Usbekisch, Russisch|Präsidialrepublik|Islam (sunnitisch)|0|Seidenstraße, Samarkand, Plov
+VNM|101|4700|4500|0.766|Vietnamesisch|Einparteienstaat|Konfessionslos, Buddhismus|0|Pho, Ao Dai, Wasserpuppentheater
+YEM|35.6|600|600|0.470|Arabisch|Bürgerkriegsland (geteilt)|Islam|3|Altstadt von Sanaa, Weihrauchhandel
+PSE|5.5|3200|3000|0.716|Arabisch|Teilautonomie (Autonomiebehörde)|Islam, Christentum|3|Olivenkultur, Stickkunst (Tatreez)
+ALB|2.4|8700|8300|0.810|Albanisch|Parlamentarische Republik|Islam, Christentum|0|Mehrstimmiger Gesang, Bunker-Erbe
+AND|0.08|44000|44000|0.884|Katalanisch|Konstitutionelles Co-Fürstentum|Christentum (katholisch)|0|Pyrenäen, Thermen
+AUT|9.1|54000|55000|0.930|Deutsch|Parlamentarische Bundesrepublik|Christentum (katholisch)|0|Klassische Musik, Kaffeehaus
+BLR|9.1|8000|7600|0.801|Belarussisch, Russisch|Präsidialrepublik (autoritär)|Christentum (orthodox)|3|Slawische Volkskunst, Kartoffelküche
+BEL|11.8|54000|52000|0.951|Niederländisch, Französisch, Deutsch|Parlamentarische Bundesmonarchie|Christentum, Konfessionslos|0|Bier, Schokolade, Comic
+BIH|3.2|8400|7800|0.804|Bosnisch, Kroatisch, Serbisch|Parlamentarische Republik (Föderation)|Islam, Christentum|0|Bosnischer Kaffee, Brücke von Mostar
+BGR|6.4|16000|16000|0.845|Bulgarisch|Parlamentarische Republik|Christentum (orthodox)|0|Kyrillische Schrift, Rosenöl, Joghurt
+HRV|3.9|21000|20800|0.906|Kroatisch|Parlamentarische Republik|Christentum (katholisch)|0|Adriaküste, Klapa-Gesang
+CYP|0.97|36000|33000|0.913|Griechisch, Türkisch|Präsidialrepublik|Christentum (orthodox), Islam|0|Geteilte Insel, Halloumi
+CZE|10.9|30000|28000|0.931|Tschechisch|Parlamentarische Republik|Konfessionslos, Christentum|0|Biertradition, Marionetten, Glaskunst
+DNK|6|70000|71000|0.952|Dänisch|Konstitutionelle Monarchie|Christentum (lutherisch)|0|Hygge, Design, Hans Christian Andersen
+EST|1.37|32000|27000|0.905|Estnisch|Parlamentarische Republik|Konfessionslos, Christentum|0|Sängerfest, digitaler Staat
+FIN|5.6|54000|52000|0.948|Finnisch, Schwedisch|Parlamentarische Republik|Christentum (lutherisch), Konfessionslos|0|Sauna, Sisu, Bildung
+FRA|68.4|46000|46000|0.920|Französisch|Semipräsidentielle Republik|Christentum, Konfessionslos|1|Gastronomie, Mode, Laizismus
+DEU|83.5|55000|55000|0.959|Deutsch|Parlamentarische Bundesrepublik|Christentum, Konfessionslos, Islam|0|Brotkultur, klassische Musik, Vereinswesen
+GRC|10.4|24500|24000|0.908|Griechisch|Parlamentarische Republik|Christentum (orthodox)|0|Antike, Philoxenia, Mezze
+HUN|9.6|22000|21000|0.866|Ungarisch|Parlamentarische Republik|Christentum, Konfessionslos|0|Thermalbäder, Paprika, Csárdás
+ISL|0.39|82000|78000|0.972|Isländisch|Parlamentarische Republik|Christentum (lutherisch)|0|Sagas, Vulkane, Lesekultur
+IRL|5.4|105000|70000|0.950|Irisch, Englisch|Parlamentarische Republik|Christentum (katholisch)|0|Pubs, Folk-Musik, Literatur
+ITA|58.9|40000|40000|0.915|Italienisch|Parlamentarische Republik|Christentum (katholisch)|0|Küche, Renaissance, Oper
+LVA|1.87|24000|21000|0.889|Lettisch|Parlamentarische Republik|Christentum|0|Sängerfest, Jahreszeiten-Bräuche
+LIE|0.04|190000|150000||Deutsch|Konstitutionelle Monarchie|Christentum (katholisch)|0|Alpenfürstentum, Briefmarken
+LTU|2.9|28500|25000|0.906|Litauisch|Semipräsidentielle Republik|Christentum (katholisch)|0|Baltische Sprache, Basketball
+LUX|0.67|135000|80000|0.922|Luxemburgisch, Französisch, Deutsch|Konstitutionelle Monarchie|Christentum (katholisch)|0|Dreisprachigkeit, Finanzplatz
+MLT|0.57|38000|32000|0.924|Maltesisch, Englisch|Parlamentarische Republik|Christentum (katholisch)|0|Johanniter-Erbe, Dorffeste
+MDA|2.4|7000|6300|0.793|Rumänisch (Moldauisch)|Parlamentarische Republik|Christentum (orthodox)|1|Wein, Folklore
+MCO|0.04|250000|200000||Französisch|Konstitutionelle Monarchie (Fürstentum)|Christentum (katholisch)|0|Grand Prix, Casino, Fürstenhaus
+MNE|0.62|12500|11500|0.862|Montenegrinisch|Parlamentarische Republik|Christentum (orthodox)|0|Bucht von Kotor, Gebirge
+NLD|18.1|63000|60000|0.955|Niederländisch|Konstitutionelle Monarchie|Konfessionslos, Christentum|0|Fahrrad, Malerei, Grachten
+MKD|1.8|7500|7200||Mazedonisch, Albanisch|Parlamentarische Republik|Christentum (orthodox), Islam|0|Ohridsee, Ikonen
+NOR|5.6|87000|90000|0.970|Norwegisch|Konstitutionelle Monarchie|Christentum (lutherisch)|0|Friluftsliv, Fjorde, Polarlicht
+POL|36.6|25000|22000|0.906|Polnisch|Parlamentarische Republik|Christentum (katholisch)|0|Pierogi, Chopin, Geschichte
+PRT|10.6|28000|26000|0.890|Portugiesisch|Semipräsidentielle Republik|Christentum (katholisch)|0|Fado, Azulejos, Seefahrer
+ROU|19|19500|17000|0.845|Rumänisch|Semipräsidentielle Republik|Christentum (orthodox)|0|Klöster, Volksmusik, Transsilvanien
+RUS|144|14000|14500|0.832|Russisch|Präsidialrepublik (autoritär)|Christentum (orthodox), Islam|3|Literatur, Ballett, Tee
+SMR|0.034|60000|55000||Italienisch|Parlamentarische Republik|Christentum (katholisch)|0|Älteste Republik, Festung
+SRB|6.6|12000|11500|0.833|Serbisch|Parlamentarische Republik|Christentum (orthodox)|0|Kyrillisch, Gastfreundschaft, Blasmusik
+SVK|5.4|22000|21000|0.866|Slowakisch|Parlamentarische Republik|Christentum (katholisch)|0|Burgen, Holzkirchen, Volkstanz
+SVN|2.1|33000|29000|0.931|Slowenisch|Parlamentarische Republik|Christentum (katholisch)|0|Naturverbundenheit, Imkerei
+ESP|48.9|35000|33000|0.918|Spanisch, Katalanisch, Galicisch, Baskisch|Parlamentarische Monarchie|Christentum (katholisch)|0|Flamenco, Tapas, Fiesta
+SWE|10.6|56000|58000|0.959|Schwedisch|Konstitutionelle Monarchie|Konfessionslos, Christentum|0|Fika, Lagom, Nobelpreis
+CHE|9|105000|95000|0.970|Deutsch, Französisch, Italienisch, Rätoromanisch|Direkte Demokratie (Bundesrepublik)|Christentum, Konfessionslos|0|Viersprachig, Uhren, Käse
+UKR|38|5500|5200|0.779|Ukrainisch|Semipräsidentielle Republik|Christentum (orthodox)|3|Wyschywanka, Borschtsch, Folklore
+GBR|69.3|52000|50000|0.946|Englisch|Parlamentarische Monarchie|Christentum, Konfessionslos|0|Pubs, Literatur, Fußball
+VAT|0.0008||||Italienisch, Latein|Absolute Wahlmonarchie|Christentum (katholisch)|0|Sitz der katholischen Kirche, Kunstschätze
+AUS|27.4|65000|64000|0.946|Englisch|Parlamentarische Bundesmonarchie|Christentum, Konfessionslos|0|Aboriginal-Kultur, Surfen, Barbecue
+FJI|0.93|6500|5800|0.774|Englisch, Fidschi, Hindi|Parlamentarische Republik|Christentum, Hinduismus|0|Kava-Zeremonie, Meke-Tanz
+KIR|0.13|2300|3500|0.624|Gilbertesisch, Englisch|Präsidialrepublik|Christentum|0|Atolle, Tanzkultur
+MHL|0.04|6500|6300||Marshallesisch, Englisch|Präsidialrepublik|Christentum|0|Navigationskunst mit Stabkarten
+FSM|0.11|3900|4100|0.627|Englisch, regionale Sprachen|Bundesrepublik|Christentum|0|Nan Madol, Seefahrertradition
+NRU|0.012|11000|12000||Nauruisch, Englisch|Präsidialrepublik|Christentum|0|Kleinste Republik, Phosphatgeschichte
+NZL|5.3|48000|47000|0.938|Englisch, Māori|Parlamentarische Monarchie|Christentum, Konfessionslos|0|Māori-Kultur, Haka, Rugby
+PLW|0.018|15000|14000||Palauisch, Englisch|Präsidialrepublik|Christentum|0|Felsinseln, Naturschutz
+PNG|10.3|3200|2700|0.568|Tok Pisin, Englisch, Hiri Motu|Parlamentarische Monarchie|Christentum|2|Über 800 Sprachen, Sing-Sing-Feste
+WSM|0.22|4000|4200|0.700|Samoanisch, Englisch|Parlamentarische Republik|Christentum|0|Fa'a Samoa, Tatau-Tätowierung
+SLB|0.74|2400|2300|0.562|Englisch, Pijin|Parlamentarische Monarchie|Christentum|0|Panflöten, Muschelgeld
+TON|0.1|5300|5500||Tongaisch, Englisch|Konstitutionelle Monarchie|Christentum|0|Königshaus, Tapa-Kunst
+TUV|0.01|5500|6000||Tuvaluisch, Englisch|Parlamentarische Monarchie|Christentum|0|Atollkultur, Fatele-Tanz
+VUT|0.33|3500|3100||Bislama, Englisch, Französisch|Parlamentarische Republik|Christentum|0|Landtaucher, Sandzeichnungen`;
+var SECT={'0':'Keine Warnung','1':'Teilweise Sicherheitshinweise','2':'Teilreisewarnung','3':'Reisewarnung'};
+var SNAPM={};
+SNAP.split('\n').forEach(function(l){var p=l.split('|');if(p.length<10)return;
+  SNAPM[p[0]]={pop:p[1]?Math.round(parseFloat(p[1])*1e6):null,gdp:p[2]?+p[2]:null,gni:p[3]?+p[3]:null,hdi:p[4]?parseFloat(p[4]):null,langs:p[5].split(', '),gov:p[6],rel:p[7],sec:p[8],cul:p[9]}});
+BASE.forEach(function(r){var s=SNAPM[r.iso3];if(!s)return;
+  r.pop=s.pop;r.gdp=s.gdp;r.gdpY=s.gdp!=null?'ca. 2024':'';r.gni=s.gni;r.gniY=s.gni!=null?'ca. 2024':'';
+  r.hdi=s.hdi;r.langs=s.langs;r.gov=s.gov;r.rel=s.rel;r.cul=s.cul;
+  r.sec={l:s.sec,t:SECT[s.sec]+' (Schätzung)'}});
+
+var state={rows:BASE,ts:null,src:{},wiki:{}};
+var langNames=null;
+try{langNames=new Intl.DisplayNames(['de'],{type:'language',fallback:'code'})}catch(e){}
+
+function j(url){return fetch(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
+
+function loadRest(){
+  return j('https://restcountries.com/v3.1/all?fields=cca3,population,languages');
+}
+function loadWB(ind){
+  return j('https://api.worldbank.org/v2/country/all/indicator/'+ind+'?format=json&per_page=400&mrnev=1').then(function(d){
+    var m={};(d[1]||[]).forEach(function(r){if(r.countryiso3code&&r.value!=null)m[r.countryiso3code]={v:r.value,y:r.date}});return m;
+  });
+}
+function loadWikidata(){
+  var q='SELECT ?iso3 (GROUP_CONCAT(DISTINCT ?govL;separator=", ") AS ?gov) (MAX(?hdi) AS ?hdiV) (GROUP_CONCAT(DISTINCT ?relL;separator=", ") AS ?rels) WHERE {'+
+  '?c wdt:P298 ?iso3 . ?c wdt:P31 wd:Q3624078 . FILTER NOT EXISTS {?c wdt:P576 ?end}'+
+  ' OPTIONAL {?c wdt:P122 ?g . ?g rdfs:label ?govL FILTER(lang(?govL)="de")}'+
+  ' OPTIONAL {?c wdt:P1081 ?hdi}'+
+  ' OPTIONAL {?c wdt:P140 ?r . ?r rdfs:label ?relL FILTER(lang(?relL)="de")}'+
+  '} GROUP BY ?iso3';
+  return j('https://query.wikidata.org/sparql?format=json&query='+encodeURIComponent(q)).then(function(d){
+    var m={};d.results.bindings.forEach(function(b){
+      m[b.iso3.value]={gov:b.gov&&b.gov.value,hdi:b.hdiV&&b.hdiV.value?parseFloat(b.hdiV.value):null,rel:b.rels&&b.rels.value};
+    });return m;
+  });
+}
+function loadAA(){
+  return j('https://www.auswaertiges-amt.de/opendata/travelwarning').then(function(d){
+    var r=d.response||d,out={};
+    Object.keys(r).forEach(function(k){var v=r[k];
+      if(v&&typeof v==='object'){var c=v.iso3CountryCode||v.countryCode;if(c)out[String(c).toUpperCase()]=v}});
+    if(!Object.keys(out).length)throw new Error('leer');
+    return out;
+  });
+}
+
+function secOf(aa,r){
+  if(!aa)return {l:'n',t:'Keine Daten geladen'};
+  var v=aa[r.iso3]||aa[r.iso2];
+  if(!v)return {l:'0',t:'Keine Warnung des Auswärtigen Amts'};
+  if(v.warning)return {l:'3',t:'Reisewarnung'};
+  if(v.partialWarning)return {l:'2',t:'Teilreisewarnung'};
+  if(v.situationWarning)return {l:'2',t:'Sicherheitshinweis (Lage)'};
+  if(v.situationPartWarning)return {l:'1',t:'Teilweise Sicherheitshinweise'};
+  return {l:'0',t:'Keine Warnung des Auswärtigen Amts'};
+}
+function hdiCat(h){if(h==null)return '';return h>=0.8?'sehr hoch':h>=0.7?'hoch':h>=0.55?'mittel':'niedrig'}
+function langList(o){
+  return Object.keys(o||{}).map(function(code){
+    var n=null;try{if(langNames){n=langNames.of(code);if(n===code)n=null}}catch(e){}
+    return n||o[code];
+  });
+}
+function setStatus(t){$('#status').textContent=t}
+
+function refresh(){
+  var b=$('#upd');b.disabled=true;b.textContent='Aktualisiere …';setStatus('Hole Daten aus mehreren Quellen …');
+  return Promise.allSettled([loadRest(),loadWB('NY.GDP.PCAP.CD'),loadWB('NY.GNP.PCAP.CD'),loadWikidata(),loadAA()]).then(function(res){
+    var names=['REST Countries','Weltbank BIP','Weltbank Einkommen','Wikidata','Auswärtiges Amt'];
+    var src={},errs=[];
+    res.forEach(function(r,i){src[names[i]]=r.status==='fulfilled';if(r.status!=='fulfilled')errs.push(names[i]+': '+(r.reason&&r.reason.message||'Fehler'))});
+    var rest=res[0].status==='fulfilled'?res[0].value:[],restM={};
+    rest.forEach(function(c){restM[c.cca3]=c});
+    var gdp=res[1].value||{},gni=res[2].value||{},wd=res[3].value||{},aa=res[4].status==='fulfilled'?res[4].value:null;
+    var okCount=res.filter(function(r){return r.status==='fulfilled'}).length;
+    if(!okCount){setStatus('Aktualisierung nicht möglich (keine Verbindung zu den Datenquellen). Die bisherigen Daten bleiben erhalten.');return}
+    /* Nur Felder überschreiben, für die neue Werte vorliegen – alles andere bleibt wie zuvor */
+    state.rows=state.rows.map(function(old){
+      var r=Object.assign({},old),c=restM[old.iso3],w=wd[old.iso3];
+      if(c){if(c.population!=null)r.pop=c.population;var ll=langList(c.languages);if(ll.length)r.langs=ll}
+      if(w){if(w.gov)r.gov=w.gov;if(w.hdi!=null)r.hdi=w.hdi;if(w.rel)r.rel=w.rel}
+      if(gdp[old.iso3]){r.gdp=gdp[old.iso3].v;r.gdpY=gdp[old.iso3].y}
+      if(gni[old.iso3]){r.gni=gni[old.iso3].v;r.gniY=gni[old.iso3].y}
+      if(aa)r.sec=secOf(aa,old);
+      return r;
+    });
+    state.ts=Date.now();
+    var prev=state.src||{};Object.keys(src).forEach(function(k){if(src[k])prev[k]=true;else if(prev[k]===undefined)prev[k]=false});
+    state.src=prev;
+    try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:state.ts,rows:state.rows,src:state.src}))}catch(e){}
+    render();
+    if(errs.length)setStatus('Teilweise aktualisiert. Nicht erreichbar (bisherige Werte bleiben): '+errs.join(' · '));
+  }).catch(function(e){setStatus('Fehler: '+e.message)}).then(function(){
+    b.disabled=false;b.textContent='↻ Daten aktualisieren';
+  });
+}
+
+function usd(v){return v==null?'–':'$ '+nf.format(Math.round(v))}
+function num(v){return v==null?'–':nf.format(v)}
+
+function render(){
+  var q=$('#q').value.trim().toLowerCase(),rg=$('#reg').value,so=$('#sort').value;
+  var rows=state.rows.filter(function(r){
+    if(rg&&r.region!==rg)return false;
+    if(!q)return true;
+    return (r.name+' '+r.cap+' '+r.langs.join(' ')).toLowerCase().indexOf(q)>-1;
+  });
+  rows.sort(function(a,b){
+    if(so==='name')return a.name.localeCompare(b.name,'de');
+    var x=a[so]==null?-1:a[so],y=b[so]==null?-1:b[so];return y-x;
+  });
+  var sel=$('#reg');
+  if(sel.options.length<=1){Object.keys(RG).map(function(k){return RG[k]}).sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent=r;sel.appendChild(o)})}
+  $('#count').textContent=rows.length+' von '+state.rows.length+' Ländern';
+  $('#list').innerHTML=rows.map(function(r){
+    var q1=encodeURIComponent(r.name);
+    return '<details data-i="'+esc(r.iso3)+'"><summary><span class="flag">'+esc(r.flag)+'</span>'+
+      '<span class="nm"><b>'+esc(r.name)+'</b><span>'+esc(r.cap)+' · '+esc(r.region)+'</span></span>'+
+      '<span class="pop">'+(r.pop!=null?num(r.pop)+'<br>Einw.':'')+'</span></summary><div class="det"><dl>'+
+      '<dt>Hauptstadt</dt><dd>'+esc(r.cap)+'</dd>'+
+      '<dt>Politisches System</dt><dd>'+(esc(r.gov)||'–')+'</dd>'+
+      '<dt>Einwohner</dt><dd>'+num(r.pop)+'</dd>'+
+      '<dt>BIP pro Kopf</dt><dd>'+usd(r.gdp)+(r.gdpY?' <small>('+esc(r.gdpY)+')</small>':'')+'</dd>'+
+      '<dt>Ø Einkommen (BNE/Kopf)</dt><dd>'+usd(r.gni)+(r.gniY?' <small>('+esc(r.gniY)+')</small>':'')+'</dd>'+
+      '<dt>HDI</dt><dd>'+(r.hdi!=null?r.hdi.toFixed(3).replace('.',',')+' <small>('+hdiCat(r.hdi)+')</small>':'–')+'</dd>'+
+      '<dt>Sprachen</dt><dd>'+(esc(r.langs.join(', '))||'–')+'</dd>'+
+      '<dt>Religionen</dt><dd>'+(esc(r.rel)||'<small>keine Angabe – <a target="_blank" rel="noopener" href="https://de.wikipedia.org/wiki/'+q1+'#Religionen">Wikipedia</a></small>')+'</dd>'+
+      '<dt>Sicherheitslage</dt><dd><span class="tag l'+r.sec.l+'">'+esc(r.sec.t)+'</span><br><small><a target="_blank" rel="noopener" href="https://www.auswaertiges-amt.de/de/ReiseUndSicherheit">Reise- und Sicherheitshinweise</a></small></dd>'+
+      '<dt>Kultur</dt><dd><span class="wk">'+(esc(r.cul)||'…')+'</span><div><small><a target="_blank" rel="noopener" href="https://de.wikipedia.org/w/index.php?search=Kultur+'+q1+'">Kultur &amp; Gesellschaft nachlesen</a></small></div></dd>'+
+      '</dl></div></details>';
+  }).join('');
+  if(state.ts){
+    var t=new Date(state.ts).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'});
+    setStatus('Stand der Daten: '+t);
+  }else setStatus('Eingebauter Datenstand (Näherungswerte, nicht live geprüft). Für aktuelle Zahlen „Daten aktualisieren“ tippen.');
+  var s=Object.keys(state.src||{}).map(function(k){return (state.src[k]?'✓ ':'✗ ')+k}).join(' · ');
+  $('#foot').textContent=(s?'Zuletzt erreichte Quellen: '+s+'. ':'')+'Ohne Aktualisierung sind alle Werte gerundete Näherungen (BIP/Einkommen in USD, ca. 2024). Mit „(Schätzung)“ markierte Sicherheitslagen unbedingt beim Auswärtigen Amt gegenprüfen. Nach der Aktualisierung: Weltbank (letzter verfügbarer Wert), HDI/Staatsform/Religionen aus Wikidata, Sicherheitslage vom Auswärtigen Amt.';
+}
+
+$('#list').addEventListener('toggle',function(e){
+  var d=e.target;if(!d.open||!d.dataset||!d.dataset.i)return;
+  var r=state.rows.filter(function(x){return x.iso3===d.dataset.i})[0];if(!r)return;
+  var el=d.querySelector('.wk');
+  if(r.cul)return;
+  if(state.wiki[r.iso3]){el.textContent=state.wiki[r.iso3];return}
+  fetch('https://de.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(r.name)).then(function(x){return x.json()}).then(function(s){
+    var t=(s.extract||'').split('. ').slice(0,2).join('. ');
+    state.wiki[r.iso3]=t||'Kein Kurzporträt gefunden.';el.textContent=state.wiki[r.iso3];
+  }).catch(function(){el.textContent='Kurzporträt derzeit nicht ladbar.'});
+},true);
+
+['q','reg','sort'].forEach(function(id){$('#'+id).addEventListener('input',render)});
+$('#upd').addEventListener('click',refresh);
+
+var cached=null;
+try{cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null')}catch(e){}
+if(cached&&cached.rows&&cached.rows.length){state.rows=cached.rows;state.ts=cached.ts;state.src=cached.src||{};render()}
+else{render();refresh()}
+})();
+</script>
+</body>
+</html>
